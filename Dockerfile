@@ -11,6 +11,11 @@ RUN npm install --include=dev
 # Copier le reste des fichiers
 COPY . .
 
+# Donner les permissions explicites
+RUN chmod -R 777 node_modules/
+RUN chmod -R 777 node_modules/.bin/
+RUN chmod +x node_modules/.bin/tsc
+
 # Build
 RUN npm run build
 
