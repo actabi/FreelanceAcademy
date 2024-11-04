@@ -19,7 +19,8 @@
         "@domain/*": ["src/domain/*"],
         "@services/*": ["src/services/*"],
         "@infrastructure/*": ["src/infrastructure/*"],
-        "@utils/*": ["src/utils/*"]
+        "@utils/*": ["src/utils/*"],
+        "@controllers/*": ["src/config/api/controllers/*"]
       }
     },
     "include": ["src/**/*"],
