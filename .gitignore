@@ -1,1 +1,23 @@
+# Dependencies
+/node_modules
+/dist
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment variables
 .env
+.env.local
+
+# IDE
+/.idea
+/.vscode
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Package manager
+package-lock.json
+yarn.lock
