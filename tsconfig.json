@@ -1,18 +1,26 @@
 {
     "compilerOptions": {
-      "target": "ES6",                         // Version de JavaScript cible
-      "module": "commonjs",                    // Système de modules à utiliser
-      "outDir": "./dist",                      // Dossier de sortie pour les fichiers compilés
-      "rootDir": "./src",                      // Dossier racine des fichiers source
-      "strict": true,                          // Active les vérifications strictes
-      "esModuleInterop": true,                 // Compatibilité avec les modules ES6
-      "experimentalDecorators": true,          // **Active les décorateurs**
-      "emitDecoratorMetadata": true,           // **Émet les métadonnées pour les décorateurs**
-      "sourceMap": true,                       // Génère les fichiers source map
-      "skipLibCheck": true,                    // Ignore la vérification des fichiers de déclaration
-      "forceConsistentCasingInFileNames": true // Force la cohérence de la casse dans les noms de fichiers
+      "target": "ES6",
+      "module": "commonjs",
+      "outDir": "./dist",
+      "rootDir": "./src",
+      "strict": true,
+      "esModuleInterop": true,
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true,
+      "sourceMap": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true,
+      "baseUrl": "./",
+      "paths": {
+        "@api/*": ["src/api/*"],
+        "@config/*": ["src/config/*"],
+        "@domain/*": ["src/domain/*"],
+        "@services/*": ["src/services/*"],
+        "@infrastructure/*": ["src/infrastructure/*"],
+        "@utils/*": ["src/utils/*"]
+      }
     },
     "include": ["src/**/*"],
     "exclude": ["node_modules", "dist"]
   }
-  
