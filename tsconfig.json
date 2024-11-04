@@ -13,14 +13,6 @@
       "skipLibCheck": true,
       "forceConsistentCasingInFileNames": true,
       "baseUrl": "./",
-      "paths": {
-        "@api/*": ["src/api/*"],
-        "@config/*": ["src/config/*"],
-        "@domain/*": ["src/domain/*"],
-        "@services/*": ["src/services/*"],
-        "@infrastructure/*": ["src/infrastructure/*"],
-        "@utils/*": ["src/utils/*"]
-      }
     },
     "include": ["src/**/*"],
     "exclude": ["node_modules", "dist"]

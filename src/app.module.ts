@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MissionEntity } from '@infrastructure/database/entities/mission.entity';
-import { RedisService } from '@infrastructure/cache/redis.client';
-import { HealthController } from '@api/controllers/health.controller';
+import { MissionEntity } from './infrastructure/database/entities/mission.entity';
+import { RedisService } from './infrastructure/cache/redis.client';
+import { HealthController } from './api/controllers/health.controller';
 
 @Module({
   imports: [
