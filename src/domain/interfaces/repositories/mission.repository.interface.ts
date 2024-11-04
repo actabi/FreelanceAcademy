@@ -1,4 +1,4 @@
-import { Mission } from '../models/mission.model';
+import { Mission } from '@domain/models/mission.model';
 
 export interface IMissionRepository {
   findById(id: string): Promise<Mission>;
