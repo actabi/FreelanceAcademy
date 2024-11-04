@@ -9,7 +9,7 @@ export class RedisService implements OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
 
   constructor(private configService: ConfigService) {
-    const redisUrl = this.configService.get<string>('REDIS_URL');
+    const redisUrl = process.env.REDIS_URL;
     
     if (!redisUrl) {
       this.logger.error('REDIS_URL is not defined in environment variables');
