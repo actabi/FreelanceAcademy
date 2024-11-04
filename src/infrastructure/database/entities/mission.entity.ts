@@ -1,12 +1,18 @@
 // src/infrastructure/database/entities/mission.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { MissionStatus } from '@domain/models/mission.model';
+import { 
+  Entity, 
+  PrimaryGeneratedColumn, 
+  Column, 
+  CreateDateColumn, 
+  UpdateDateColumn 
+} from 'typeorm';
+import { MissionStatus } from '../../../domain/models/mission.model';  // Changé ici pour un chemin relatif
 
 @Entity('missions')
 export class MissionEntity {
   @PrimaryGeneratedColumn('uuid')
-  id!: string;  
-
+  id!: string;
+  
   @Column()
   title!: string;
 
@@ -20,10 +26,10 @@ export class MissionEntity {
   })
   status!: MissionStatus;
 
-  @Column('decimal')
+  @Column('decimal', { precision: 10, scale: 2 })  // Ajouté precision et scale
   dailyRateMin!: number;
 
-  @Column('decimal')
+  @Column('decimal', { precision: 10, scale: 2 })  // Ajouté precision et scale
   dailyRateMax!: number;
 
   @Column('timestamp', { nullable: true })
