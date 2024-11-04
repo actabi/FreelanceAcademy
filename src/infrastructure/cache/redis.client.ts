@@ -19,16 +19,16 @@ export class RedisService implements OnModuleDestroy {
     this.logger.log('Initializing Redis connection...');
     
     this.client = new Redis(redisUrl, {
-      retryStrategy(times) {
+      retryStrategy: (times) => {
         const delay = Math.min(times * 100, 2000);
         return delay;
       },
       maxRetriesPerRequest: 5,
       enableReadyCheck: true,
-      reconnectOnError(err) {
+      reconnectOnError: (err) => {
         this.logger.error(`Redis reconnection error: ${err.message}`);
         return true;
-      },
+      }
     });
 
     this.client.on('error', (err) => {
