@@ -16,7 +16,7 @@ export class RedisService implements OnModuleDestroy {
         .map(key => key)
     );
 
-    const redisUrl = process.env.REDIS_URL;
+    const redisUrl = process.env.REDIS_URL + '?family=0';
     
     if (!redisUrl) {
       this.logger.error('REDIS_URL is not defined in process.env');

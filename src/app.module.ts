@@ -18,9 +18,9 @@ import { HealthController } from './api/controllers/health.controller';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        url: configService.get('DATABASE_URL'),
+        url: process.env.DATABASE_URL,
         entities: [MissionEntity],
-        synchronize: configService.get('NODE_ENV') === 'development',
+        synchronize: process.env.NODE_ENV === 'development',
         ssl: {
           rejectUnauthorized: false
         },
@@ -29,7 +29,7 @@ import { HealthController } from './api/controllers/health.controller';
         retryDelay: 3000,
         keepConnectionAlive: true,
         autoLoadEntities: true,
-        logging: configService.get('NODE_ENV') === 'development',
+        logging: process.env.NODE_ENV === 'development',
       }),
       inject: [ConfigService],
     }),
