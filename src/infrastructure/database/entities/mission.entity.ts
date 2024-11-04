@@ -5,39 +5,39 @@ import { MissionStatus } from '../../../domain/models/mission.model';
 @Entity('missions')
 export class MissionEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;  
 
   @Column()
-  title: string;
+  title!: string;
 
   @Column('text')
-  description: string;
+  description!: string;
 
   @Column({
     type: 'enum',
     enum: MissionStatus,
     default: MissionStatus.DRAFT
   })
-  status: MissionStatus;
+  status!: MissionStatus;
 
   @Column('decimal')
-  dailyRateMin: number;
+  dailyRateMin!: number;
 
   @Column('decimal')
-  dailyRateMax: number;
+  dailyRateMax!: number;
 
   @Column('timestamp', { nullable: true })
-  startDate: Date;
+  startDate!: Date;
 
   @Column('timestamp', { nullable: true })
-  endDate: Date;
+  endDate!: Date;
 
   @Column('simple-array')
-  skills: string[];
+  skills!: string[];
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }
