@@ -1,6 +1,6 @@
 // src/infrastructure/database/entities/mission.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { MissionStatus } from '../../../domain/models/mission.model';
+import { MissionStatus } from '@domain/models/mission.model';
 
 @Entity('missions')
 export class MissionEntity {
