@@ -10,6 +10,7 @@ import { HealthController } from './api/controllers/health.controller';
     // Configuration globale
     ConfigModule.forRoot({
       isGlobal: true, // Rend la configuration accessible partout
+      cache: true
     }),
 
     // Configuration TypeORM avec plus de robustesse

@@ -1,40 +1,46 @@
 // src/infrastructure/cache/redis.client.ts
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 @Injectable()
 export class RedisService implements OnModuleDestroy {
   private readonly client: Redis;
+  private readonly logger = new Logger(RedisService.name);
 
   constructor(private configService: ConfigService) {
     const redisUrl = this.configService.get<string>('REDIS_URL');
+    
     if (!redisUrl) {
+      this.logger.error('REDIS_URL is not defined in environment variables');
       throw new Error('REDIS_URL configuration is required');
     }
 
+    this.logger.log('Initializing Redis connection...');
+    
     this.client = new Redis(redisUrl, {
-      retryStrategy: (times) => {
-        const delay = Math.min(times * 500, 2000);
+      retryStrategy(times) {
+        const delay = Math.min(times * 100, 2000);
         return delay;
       },
-      maxRetriesPerRequest: 3,
+      maxRetriesPerRequest: 5,
       enableReadyCheck: true,
-      reconnectOnError: (err) => {
-        const targetError = 'READONLY';
-        if (err.message.includes(targetError)) {
-          return true;
-        }
-        return false;
+      reconnectOnError(err) {
+        this.logger.error(`Redis reconnection error: ${err.message}`);
+        return true;
       },
     });
 
     this.client.on('error', (err) => {
-      console.error('Redis Client Error:', err);
+      this.logger.error(`Redis Client Error: ${err.message}`);
     });
 
     this.client.on('connect', () => {
-      console.log('Successfully connected to Redis');
+      this.logger.log('Successfully connected to Redis');
+    });
+
+    this.client.on('ready', () => {
+      this.logger.log('Redis client is ready');
     });
   }
 
