@@ -5,16 +5,11 @@ WORKDIR /app
 # Copier les fichiers de configuration
 COPY package*.json tsconfig.json ./
 
-# Installer les dépendances avec les permissions appropriées
-RUN npm install --include=dev \
-    && mkdir -p /app/node_modules/.cache \
-    && chmod -R 777 /app/node_modules
+# Installer toutes les dépendances (y compris devDependencies pour le build)
+RUN npm install
 
 # Copier le code source
 COPY src/ ./src/
-
-# Définir les permissions pour le build
-RUN chmod -R 777 /app
 
 # Build
 RUN npm run build

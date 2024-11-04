@@ -1,4 +1,6 @@
 // src/api/controllers/health.controller.ts
+import { Controller, Get } from '@nestjs/common';
+
 @Controller('health')
 export class HealthController {
   @Get()
@@ -12,5 +14,21 @@ export class HealthController {
         discord: await this.checkDiscord()
       }
     };
+  }
+
+  // Ajout des méthodes manquantes
+  private async checkDatabase(): Promise<boolean> {
+    // Implémentation à ajouter
+    return true;
+  }
+
+  private async checkRedis(): Promise<boolean> {
+    // Implémentation à ajouter
+    return true;
+  }
+
+  private async checkDiscord(): Promise<boolean> {
+    // Implémentation à ajouter
+    return true;
   }
 }
