@@ -9,11 +9,13 @@ import { MissionEntity } from "./core/domain/entities/mission.entity";
 import { FreelanceEntity } from "./core/domain/entities/freelance.entity";
 import { SkillEntity } from "./core/domain/entities/skill.entity";
 import { ApplicationEntity } from "./core/domain/entities/application.entity";
+import { AlertEntity } from "./core/domain/entities/alert.entity";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { HealthController } from "./api/controllers/health.controller";
 import { RedisService } from "./core/services/redis.service";
 import { CacheService } from "./core/services/cache.service";
+import { AlertService } from "./core/services/alert.service";
 
 @Module({
   imports: [
@@ -48,7 +50,8 @@ import { CacheService } from "./core/services/cache.service";
       MissionEntity,
       FreelanceEntity,
       SkillEntity,
-      ApplicationEntity
+      ApplicationEntity,
+      AlertEntity
     ]),
   ],
   controllers: [
@@ -67,7 +70,8 @@ import { CacheService } from "./core/services/cache.service";
     MatchingService,
     NotificationService,
     DiscordClient,
-    CacheService
+    CacheService,
+    AlertService
     // Ajoutez ici vos autres services
   ],
   exports: [

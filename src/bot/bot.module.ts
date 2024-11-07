@@ -7,7 +7,7 @@ import { ProfileCommand } from './commands/profile.command';
 import { AlertCommand } from './commands/alert.command';
 import { MissionService } from '../core/services/mission.service';
 import { FreelanceService } from '../core/services/freelance.service';
-import { AlertService } from '../core/services/alert.service';
+import { AlertService } from '../core/services/alert.service'; 
 import { NotificationService } from '../core/services/notification.service';
 
 @Module({

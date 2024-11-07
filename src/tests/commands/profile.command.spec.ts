@@ -1,7 +1,7 @@
 // src/bot/tests/commands/profile.command.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
-import { ProfileCommand } from '../../commands/profile.command';
-import { FreelanceService } from '../../../core/services/freelance.service';
+import { ProfileCommand } from '../../bot/commands/profile.command';
+import { FreelanceService } from '../../core/services/freelance.service';
 import { CommandInteraction } from 'discord.js';
 
 describe('ProfileCommand', () => {
@@ -49,4 +49,7 @@ describe('ProfileCommand', () => {
 
       await command.execute(interaction);
       expect(interaction.reply).toHaveBeenCalled();
-      expect(freelanceService.getProfileByDiscordId).toHave
+            expect(freelanceService.getProfileByDiscordId).toHaveBeenCalledWith('test-user-id');
+          });
+        });
+      });

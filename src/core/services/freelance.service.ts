@@ -67,4 +67,14 @@ export class FreelanceService {
     await this.cacheService.invalidateFreelance(id);
     return updatedFreelance;
   }
+
+  async getProfileByDiscordId(discordId: string): Promise<any> {
+    // mock implementation
+    return {
+      name: 'Test User',
+      dailyRate: 500,
+      skills: ['TypeScript', 'React'],
+      isAvailable: true,
+    };
+  }
 }
