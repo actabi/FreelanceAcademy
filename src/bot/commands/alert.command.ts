@@ -4,6 +4,14 @@ import { CommandInteraction, EmbedBuilder } from 'discord.js';
 import { AlertService } from '../../core/services/alert.service';
 import { ICommandHandler } from './interfaces/command.handler.interface';
 
+
+// Command decorator
+import { SetMetadata } from '@nestjs/common';
+
+export function Command(options: { name: string, description: string, options?: any[] }) {
+  return SetMetadata('command', options);
+}
+
 @Injectable()
 export class AlertCommand implements ICommandHandler {
   constructor(private readonly alertService: AlertService) {}
@@ -77,5 +85,61 @@ export class AlertCommand implements ICommandHandler {
       content: 'Alerte supprimée avec succès !',
       ephemeral: true
     });
+  }
+}
+
+// Mission commands
+@Injectable()
+export class MissionCommands {
+  constructor(private missionService: MissionService) {}
+
+  @Command({
+    name: 'missions',
+    description: 'Liste des missions disponibles'
+  })
+  async listMissions(interaction: CommandInteraction) {
+    const missions = await this.missionService.findAll();
+    // Handle response
+  }
+
+  @Command({
+    name: 'mission',
+    description: 'Détails d\'une mission',
+    options: [{
+      name: 'id',
+      description: 'ID de la mission',
+      type: 'STRING',
+      required: true
+    }]
+  })
+  async getMission(interaction: CommandInteraction) {
+    if (!interaction.isChatInputCommand()) return;
+    
+    const id = interaction.options.getString('id', true);
+    const mission = await this.missionService.findOne(id);
+    // Handle response
+  }
+}
+
+// Profile command
+@Injectable()
+export class ProfileCommand {
+  constructor(private readonly freelanceService: FreelanceService) {}
+
+  async execute(interaction: CommandInteraction) {
+    if (!interaction.isChatInputCommand()) return;
+
+    const subcommand = interaction.options.getSubcommand(true);
+    
+    switch (subcommand) {
+      case 'view':
+        await this.viewProfile(interaction);
+        break;
+      case 'edit':
+        await this.editProfile(interaction);
+        break;
+      default:
+        await interaction.reply({ content: 'Commande invalide', ephemeral: true });
+    }
   }
 }

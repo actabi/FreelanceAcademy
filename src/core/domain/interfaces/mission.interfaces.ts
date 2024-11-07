@@ -29,3 +29,22 @@ export interface IMission {
   estimatedDuration?: number; // en jours
   maxApplications?: number;
 }
+
+// Update the test file
+describe('DiscordClient', () => {
+  // ... autres configurations ...
+  
+  const mockMission: IMission = {
+    id: 'test-id',
+    title: 'Test Mission',
+    description: 'Test Description',
+    status: MissionStatus.PUBLISHED,
+    dailyRateMin: 400,
+    dailyRateMax: 600,
+    location: MissionLocation.REMOTE,
+    skills: [],
+    applications: [], // Ajout du champ manquant
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+});
