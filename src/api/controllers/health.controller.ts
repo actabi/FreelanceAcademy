@@ -1,10 +1,10 @@
 // src/api/controllers/health.controller.ts
-import { Controller, Get } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/typeorm';
-import { Connection } from 'typeorm';
-import { RedisService } from '../../infrastructure/cache/redis.client';
+import { Controller, Get } from "@nestjs/common";
+import { InjectConnection } from "@nestjs/typeorm";
+import { Connection } from "typeorm";
+import { RedisService } from "../../infrastructure/cache/redis.client";
 
-@Controller('health')
+@Controller("health")
 export class HealthController {
   constructor(
     @InjectConnection() private connection: Connection,
@@ -17,7 +17,7 @@ export class HealthController {
     const redisHealth = await this.checkRedis();
 
     return {
-      status: dbHealth && redisHealth ? 'ok' : 'error',
+      status: dbHealth && redisHealth ? "ok" : "error",
       database: dbHealth,
       redis: redisHealth,
       timestamp: new Date().toISOString(),
@@ -26,10 +26,10 @@ export class HealthController {
 
   private async checkDatabase(): Promise<boolean> {
     try {
-      await this.connection.query('SELECT 1');
+      await this.connection.query("SELECT 1");
       return true;
     } catch (error) {
-      console.error('Database health check failed:', error);
+      console.error("Database health check failed:", error);
       return false;
     }
   }
@@ -40,7 +40,7 @@ export class HealthController {
       await client.ping();
       return true;
     } catch (error) {
-      console.error('Redis health check failed:', error);
+      console.error("Redis health check failed:", error);
       return false;
     }
   }

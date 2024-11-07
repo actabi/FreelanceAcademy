@@ -1,24 +1,24 @@
 // src/main.ts
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Gestion gracieuse de l'arrêt
-  process.on('SIGTERM', async () => {
-    console.log('SIGTERM received. Starting graceful shutdown...');
+  process.on("SIGTERM", async () => {
+    console.log("SIGTERM received. Starting graceful shutdown...");
     await app.close();
     process.exit(0);
   });
 
   // Gestion des erreurs non capturées
-  process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("Unhandled Rejection at:", promise, "reason:", reason);
   });
 
-  process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', error);
+  process.on("uncaughtException", (error) => {
+    console.error("Uncaught Exception:", error);
   });
 
   // Attendre que la connexion à la base de données soit établie
@@ -28,6 +28,6 @@ async function bootstrap() {
 }
 
 bootstrap().catch((err) => {
-  console.error('Error starting server:', err);
+  console.error("Error starting server:", err);
   process.exit(1);
 });
