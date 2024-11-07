@@ -4,7 +4,6 @@ import { IMission } from '../domain/interfaces/mission.interface';
 import { IFreelance } from '../domain/interfaces/freelance.interface';
 import { Mission } from '../domain/models/mission.model';
 
-
 @Injectable()
 export class CacheService {
   private readonly MISSION_PREFIX = 'mission:';
@@ -14,22 +13,38 @@ export class CacheService {
 
   constructor(private readonly redisService: RedisService) {}
 
-  // Méthodes pour les missions
-  async getMission(id: string): Promise<IMission | null> {
-    const cached = await this.redisService.get(`${this.MISSION_PREFIX}${id}`);
-    return cached ? JSON.parse(cached) : null;
+  private getKey(type: string, id: string): string {
+    return `${type}:${id}`;
   }
 
-  async setMission(id: string, mission: IMission): Promise<void> {
+  async setData(key: string, value: any, ttl: number = this.DEFAULT_TTL): Promise<void> {
     await this.redisService.set(
-      `${this.MISSION_PREFIX}${id}`,
-      JSON.stringify(mission),
-      this.DEFAULT_TTL
+      key,
+      JSON.stringify(value),
+      ttl
     );
   }
 
+  async getData<T>(key: string): Promise<T | null> {
+    const cached = await this.redisService.get(key);
+    return cached ? JSON.parse(cached) : null;
+  }
+
+  async invalidateData(key: string): Promise<void> {
+    await this.redisService.del(key);
+  }
+
+  // Méthodes spécifiques pour les missions (maintenues pour la compatibilité)
+  async getMission(id: string): Promise<IMission | null> {
+    return this.getData<IMission>(this.getKey('mission', id));
+  }
+
+  async setMission(mission: IMission): Promise<void> {
+    await this.setData(this.getKey('mission', mission.id), mission);
+  }
+
   async invalidateMission(id: string): Promise<void> {
-    await this.redisService.del(`${this.MISSION_PREFIX}${id}`);
+    await this.invalidateData(this.getKey('mission', id));
   }
 
   // Méthodes pour les freelances

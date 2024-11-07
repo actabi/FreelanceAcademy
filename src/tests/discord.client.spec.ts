@@ -1,10 +1,10 @@
 // src/bot/tests/discord.client.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { DiscordClient } from '../discord.client';
-import { Client, TextChannel } from 'discord.js';
-import { IMission } from '../../core/domain/models/mission.model';
-import { MissionStatus, MissionLocation } from '../../core/domain/interfaces/mission';
+import { DiscordClient } from '../bot/discord.client';
+import { TextChannel } from 'discord.js';
+import { IMission } from '../core/domain/interfaces/mission';
+import { MissionStatus, MissionLocation } from '../core/domain/interfaces/mission';
 
 describe('DiscordClient', () => {
   let discordClient: DiscordClient;

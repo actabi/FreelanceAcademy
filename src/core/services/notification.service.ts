@@ -23,7 +23,7 @@ export class NotificationService {
         };
         
         // Mettre à jour le cache avec la version mise à jour
-        await this.cacheService.setMission(mission.id, updatedMission);
+        await this.cacheService.setMission(updatedMission);
 
         // Notifier les freelances correspondants
         await this.notifyMatchingFreelances(updatedMission);

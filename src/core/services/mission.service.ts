@@ -28,7 +28,7 @@ export class MissionService {
     }
 
     const savedMission = await this.missionRepository.save(mission);
-    await this.cacheService.setMission(savedMission.id, savedMission);
+    await this.cacheService.setMission(savedMission);
 
     return savedMission;
   }
@@ -40,13 +40,13 @@ export class MissionService {
     }
 
     mission.status = MissionStatus.PUBLISHED;
-    const publishedMission = await this.missionRepository.save(mission);
+    const publishedMission = await this.missionRepository.save(mission); //ajouter l'id
     
     // Publier sur Discord
     await this.notificationService.notifyNewMission(publishedMission);
     
     // Mettre à jour le cache
-    await this.cacheService.setMission(id, publishedMission);
+    await this.cacheService.setMission(publishedMission);
 
     return publishedMission;
   }
@@ -72,7 +72,7 @@ export class MissionService {
     });
 
     if (mission) {
-      await this.cacheService.setMission(id, mission);
+      await this.cacheService.setMission(mission); //ajouter l'id
     }
 
     return mission;

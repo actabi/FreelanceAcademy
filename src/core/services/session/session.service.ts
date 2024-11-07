@@ -1,4 +1,8 @@
 // src/core/services/session/session.service.ts
+import { Injectable } from '@nestjs/common';
+import { RedisService } from '../redis.service';
+import { randomUUID } from 'crypto';
+
 @Injectable()
 export class SessionService {
   constructor(private readonly redisService: RedisService) {}

@@ -1,9 +1,11 @@
-// src/core/services/alert.service.ts
+// src\core\services\alert.service.ts
+
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CacheService } from './cache.service';
 import { AlertEntity } from '../domain/entities/alert.entity';
+import { IAlert } from '../domain/interfaces/alerte.interface';
 
 // Interface pour les critères d'alerte
 interface CreateAlertDto {
@@ -14,20 +16,11 @@ interface CreateAlertDto {
   location?: string;
 }
 
-// Interface pour l'entité Alerte
-interface IAlert {
-  id: string;
-  userId: string;
-  skills: string[];
-  minRate?: number;
-  maxRate?: number;
-  location?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 @Injectable()
 export class AlertService {
+  private readonly CACHE_KEY_PREFIX = 'alert:';
+  private readonly CACHE_TTL = 3600; // 1 heure
+
   constructor(
     @InjectRepository(AlertEntity)
     private readonly alertRepository: Repository<IAlert>,
@@ -43,37 +36,24 @@ export class AlertService {
     });
 
     const savedAlert = await this.alertRepository.save(alert);
-
-    // Mettre en cache l'alerte pour un accès rapide
-    await this.cacheService.set(
-      `alert:${savedAlert.id}`,
-      JSON.stringify(savedAlert),
-      3600 // Cache pour 1 heure
-    );
-
+    await this.cacheService.setData(`${this.CACHE_KEY_PREFIX}${savedAlert.id}`, savedAlert);
     return savedAlert;
   }
 
   // Récupérer les alertes d'un utilisateur
   async getAlertsByUserId(userId: string): Promise<IAlert[]> {
-    // Essayer de récupérer depuis le cache d'abord
-    const cachedAlerts = await this.cacheService.get(`alerts:user:${userId}`);
+    const cacheKey = `alerts:user:${userId}`;
+    const cachedAlerts = await this.cacheService.getData<IAlert[]>(cacheKey);
+    
     if (cachedAlerts) {
-      return JSON.parse(cachedAlerts);
+      return cachedAlerts;
     }
 
-    // Si pas en cache, récupérer depuis la base de données
     const alerts = await this.alertRepository.find({
       where: { userId }
     });
 
-    // Mettre en cache pour les prochaines requêtes
-    await this.cacheService.set(
-      `alerts:user:${userId}`,
-      JSON.stringify(alerts),
-      3600
-    );
-
+    await this.cacheService.setData(cacheKey, alerts);
     return alerts;
   }
 
@@ -89,14 +69,12 @@ export class AlertService {
 
     await this.alertRepository.remove(alert);
     
-    // Invalider le cache
-    await this.cacheService.del(`alert:${alertId}`);
-    await this.cacheService.del(`alerts:user:${alert.userId}`);
+    await this.cacheService.invalidateData(`${this.CACHE_KEY_PREFIX}${alertId}`);
+    await this.cacheService.invalidateData(`alerts:user:${alert.userId}`);
   }
 
   // Vérifier si une mission correspond aux critères d'une alerte
   async checkMissionMatch(mission: any, alert: IAlert): Promise<boolean> {
-    // Vérifier le TJM
     if (alert.minRate && mission.dailyRateMin < alert.minRate) {
       return false;
     }
@@ -104,19 +82,14 @@ export class AlertService {
       return false;
     }
 
-    // Vérifier la localisation
     if (alert.location && mission.location !== alert.location) {
       return false;
     }
 
-    // Vérifier les compétences
-    const missionSkills = mission.skills.map(skill => skill.name.toLowerCase());
-    const alertSkills = alert.skills.map(skill => skill.toLowerCase());
-    const hasMatchingSkills = alertSkills.some(skill => 
-      missionSkills.includes(skill)
-    );
-
-    return hasMatchingSkills;
+    const missionSkills = mission.skills?.map((skill: any) => skill.name.toLowerCase()) || [];
+    const alertSkills = alert.skills?.map(skill => skill.toLowerCase()) || [];
+    
+    return alertSkills.some(skill => missionSkills.includes(skill));
   }
 
   // Trouver toutes les alertes correspondant à une mission
@@ -143,21 +116,14 @@ export class AlertService {
       throw new Error('Alert not found');
     }
 
-    // Mettre à jour les champs
     Object.assign(alert, {
       ...updateData,
       updatedAt: new Date()
     });
 
     const updatedAlert = await this.alertRepository.save(alert);
-
-    // Mettre à jour le cache
-    await this.cacheService.set(
-      `alert:${alertId}`,
-      JSON.stringify(updatedAlert),
-      3600
-    );
-    await this.cacheService.del(`alerts:user:${alert.userId}`);
+    await this.cacheService.setData(`${this.CACHE_KEY_PREFIX}${alertId}`, updatedAlert);
+    await this.cacheService.invalidateData(`alerts:user:${alert.userId}`);
 
     return updatedAlert;
   }

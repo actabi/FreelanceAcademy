@@ -1,8 +1,8 @@
 // src/bot/commands/alert.command.ts
 import { Injectable } from '@nestjs/common';
 import { CommandInteraction, EmbedBuilder } from 'discord.js';
-import { ICommandHandler } from './interfaces/command.handler.interface';
 import { AlertService } from '../../core/services/alert.service';
+import { ICommandHandler } from './interfaces/command.handler.interface';
 
 @Injectable()
 export class AlertCommand implements ICommandHandler {

@@ -1,7 +1,7 @@
 // src/core/services/freelance.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { FreelanceEntity } from '../domain/entities/freelance.entity';
 import { SkillEntity } from '../domain/entities/skill.entity';
 import { CreateFreelanceDto, UpdateFreelanceDto } from '../domain/dtos';
@@ -22,7 +22,7 @@ export class FreelanceService {
     const freelance = this.freelanceRepository.create(createFreelanceDto);
 
     if (createFreelanceDto.skillIds?.length) {
-      freelance.skills = await this.skillRepository.findByIds(createFreelanceDto.skillIds);
+      freelance.skills = await this.skillRepository.findBy({id: In(createFreelanceDto.skillIds)});
     }
 
     const savedFreelance = await this.freelanceRepository.save(freelance);
@@ -58,7 +58,7 @@ export class FreelanceService {
     }
 
     if (updateFreelanceDto.skillIds) {
-      freelance.skills = await this.skillRepository.findByIds(updateFreelanceDto.skillIds);
+      freelance.skills = await this.skillRepository.findBy({id: In(updateFreelanceDto.skillIds)});
     }
 
     Object.assign(freelance, updateFreelanceDto);
