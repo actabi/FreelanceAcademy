@@ -1,5 +1,5 @@
 // src/core/domain/models/mission.model.ts
-import { MissionStatus, MissionLocation } from '../interfaces/mission';
+import { MissionStatus, MissionLocation, IMission } from '../interfaces/mission';
 
 export class Mission implements IMission {
   id: string;

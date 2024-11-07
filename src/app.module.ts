@@ -13,6 +13,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { HealthController } from "./api/controllers/health.controller";
 import { RedisService } from "./core/services/redis.service";
+import { CacheService } from "./core/services/cache.service";
 
 @Module({
   imports: [
@@ -65,7 +66,8 @@ import { RedisService } from "./core/services/redis.service";
     FreelanceService,
     MatchingService,
     NotificationService,
-    DiscordClient
+    DiscordClient,
+    CacheService
     // Ajoutez ici vos autres services
   ],
   exports: [

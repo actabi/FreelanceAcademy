@@ -6,11 +6,12 @@ import {
     GatewayIntentBits,
     ButtonBuilder,
     ActionRowBuilder,
-    ButtonStyle
+    ButtonStyle,
+    MessageActionRowComponentBuilder
   } from 'discord.js';
   import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
   import { ConfigService } from '@nestjs/config';
-  import { IMission } from '../core/domain/models/mission.model';
+  import { IMission } from '../core/domain/interfaces/mission.interface';
   import { MissionFormatter } from './interactions/mission.formatter';
   
   @Injectable()
@@ -50,7 +51,8 @@ import {
       });
     }
   
-    async publishMission(mission: IMission): Promise<void> {
+    async publishMission(mission: IMission): Promise<string | void> {
+      try {
       const channelId = this.configService.get<string>('DISCORD_CHANNEL_ID');
       if (!channelId) {
         throw new Error('DISCORD_CHANNEL_ID must be defined');
@@ -70,10 +72,14 @@ import {
       });
   
       return message.id;
+    } catch (error) {
+      console.error('Error publishing mission to Discord:', error);
+      throw error;
     }
+  }
   
-    private createMissionButtons(mission: IMission): ActionRowBuilder {
-      return new ActionRowBuilder()
+    private createMissionButtons(mission: IMission): ActionRowBuilder<MessageActionRowComponentBuilder> {
+      return new ActionRowBuilder<MessageActionRowComponentBuilder>()
         .addComponents(
           new ButtonBuilder()
             .setCustomId(`apply_${mission.id}`)
@@ -84,5 +90,17 @@ import {
             .setLabel('Plus de détails')
             .setStyle(ButtonStyle.Secondary)
         );
+    }
+
+    async sendDirectMessage(discordId: string, content: string): Promise<void> {
+      try {
+        const user = await this.client.users.fetch(discordId);
+        if (user) {
+          await user.send(content);
+        }
+      } catch (error) {
+        console.error(`Error sending DM to user ${discordId}:`, error);
+        throw error;
+      }
     }
   }

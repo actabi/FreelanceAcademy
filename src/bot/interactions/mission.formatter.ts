@@ -1,6 +1,6 @@
 // src/bot/interactions/mission.formatter.ts
 import { EmbedBuilder } from 'discord.js';
-import { IMission } from '../../core/domain/models/mission.model';
+import { IMission } from '../../core/domain/interfaces/mission.interface';
 
 export class MissionFormatter {
   static formatForDiscord(mission: IMission): EmbedBuilder {
