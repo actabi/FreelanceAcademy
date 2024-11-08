@@ -1,21 +1,25 @@
-FROM node:16-slim
+# Utiliser Node.js 18 ou supérieur qui inclut ReadableStream
+FROM node:18-alpine
 
 WORKDIR /app
 
-# Copier les fichiers de configuration
-COPY package*.json tsconfig.json ./
+# Copier les fichiers de dépendances
+COPY package*.json ./
 
-# Installer toutes les dépendances (y compris devDependencies pour le build)
+# Installer les dépendances
 RUN npm install
 
-# Copier le code source
-COPY src/ ./src/
+# Copier le reste des fichiers
+COPY . .
 
 # Build
 RUN npm run build
 
 # Nettoyer les dépendances de développement
-RUN npm ci --omit=dev
+RUN npm prune --production
 
-# Démarrer l'application
+# Exposer le port
+EXPOSE 3000
+
+# Commande de démarrage
 CMD ["npm", "start"]
