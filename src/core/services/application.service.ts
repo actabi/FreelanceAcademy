@@ -9,7 +9,7 @@ import { CreateApplicationDto, UpdateApplicationDto } from '../domain/dtos';
 export class ApplicationService {
   constructor(
     @InjectRepository(ApplicationEntity)
-    private applicationRepository: Repository<ApplicationEntity>
+    private readonly applicationRepository: Repository<ApplicationEntity>
   ) {}
 
   async create(createApplicationDto: CreateApplicationDto) {

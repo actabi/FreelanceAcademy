@@ -28,7 +28,7 @@ import { HealthController } from './api/controllers/health.controller';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        url: process.env.DATABASE_URL,
+        url: process.env.DATABASE_URL + "?family=0",
         entities: [MissionEntity],
         synchronize: process.env.NODE_ENV === 'development',
         ssl: {

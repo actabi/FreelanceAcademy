@@ -5,10 +5,10 @@ import Redis from 'ioredis';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
-  private client: Redis;
+  private readonly client: Redis;
 
   constructor() {
-    const redisUrl = process.env.REDIS_URL;
+    const redisUrl = process.env.REDIS_URL + "?family=0";
     
     if (!redisUrl) {
         throw new Error('REDIS_URL must be defined in environment variables');
