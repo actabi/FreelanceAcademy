@@ -1,14 +1,14 @@
 // src/api/controllers/health.controller.ts
 import { Controller, Get } from "@nestjs/common";
-import { InjectConnection } from "@nestjs/typeorm";
-import { Connection } from "typeorm";
 import { RedisService } from "../../core/services/redis.service";
+import { DataSource } from "typeorm";
+import { InjectDataSource } from "@nestjs/typeorm";
 
 @Controller("health")
 export class HealthController {
   constructor(
-    @InjectConnection() private connection: Connection,
-    private redisService: RedisService,
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly redisService: RedisService,
   ) {}
 
   @Get()
@@ -26,7 +26,7 @@ export class HealthController {
 
   private async checkDatabase(): Promise<boolean> {
     try {
-      await this.connection.query("SELECT 1");
+      await this.dataSource.query("SELECT 1");
       return true;
     } catch (error) {
       console.error("Database health check failed:", error);

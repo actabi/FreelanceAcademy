@@ -2,7 +2,6 @@
 import { 
   Client, 
   TextChannel, 
-  EmbedBuilder,
   GatewayIntentBits,
   ButtonBuilder,
   ActionRowBuilder,
@@ -15,7 +14,7 @@ import { MissionFormatter } from './interactions/mission.formatter';
 
 @Injectable()
 export class DiscordClient implements OnModuleInit {
-  private client: Client;
+  private readonly client: Client;
   private readonly logger = new Logger(DiscordClient.name);
 
   constructor() {
