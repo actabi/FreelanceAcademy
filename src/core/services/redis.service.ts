@@ -1,34 +1,35 @@
 // src/core/services/redis.service.ts
 
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private client: Redis;
 
-  constructor(private configService: ConfigService) {
-    this.client = new Redis({
-      host: this.configService.get<string>('REDIS_HOST', 'localhost'),
-      port: this.configService.get<number>('REDIS_PORT', 6379),
-      password: this.configService.get<string>('REDIS_PASSWORD'),
-      retryStrategy: (times: number) => {
-        // Stratégie de reconnexion
-        // Réessayer toutes les 2 secondes pendant la première minute
-        if (times <= 30) {
-          return 2000;
+  constructor() {
+    const redisUrl = process.env.REDIS_URL;
+    
+    if (!redisUrl) {
+        throw new Error('REDIS_URL must be defined in environment variables');
+    }
+
+    this.client = new Redis(redisUrl, {
+        retryStrategy: (times) => {
+            if (times <= 30) {
+                return 2000;
+            }
+            return null;
+        },
+        tls: {
+            rejectUnauthorized: false
         }
-        // Ensuite, abandonner
-        return null;
-      }
     });
 
-    // Gestion des erreurs
     this.client.on('error', (err) => {
-      console.error('Redis Client Error:', err);
+        console.error('Redis Client Error:', err);
     });
-  }
+}
 
   async onModuleInit() {
     try {

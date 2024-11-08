@@ -10,7 +10,6 @@ import {
   MessageActionRowComponentBuilder
 } from 'discord.js';
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { IMission } from '../core/domain/interfaces/mission.interface';
 import { MissionFormatter } from './interactions/mission.formatter';
 
@@ -19,27 +18,25 @@ export class DiscordClient implements OnModuleInit {
   private client: Client;
   private readonly logger = new Logger(DiscordClient.name);
 
-  constructor(private configService: ConfigService) {
+  constructor() {
     this.client = new Client({
-      intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildMessageReactions,
-        GatewayIntentBits.DirectMessages,
-        GatewayIntentBits.MessageContent
-      ]
+        intents: [
+            GatewayIntentBits.Guilds,
+            GatewayIntentBits.GuildMessages,
+            GatewayIntentBits.GuildMessageReactions,
+            GatewayIntentBits.DirectMessages,
+            GatewayIntentBits.MessageContent
+        ]
     });
+}
 
-    this.setupEventHandlers();
-  }
-
-  async onModuleInit() {
-    const token = this.configService.get<string>('DISCORD_TOKEN');
-    if (!token) {
+async onModuleInit() {
+  const token = process.env.DISCORD_TOKEN;
+  if (!token) {
       throw new Error('DISCORD_TOKEN must be defined');
-    }
-    await this.client.login(token);
   }
+  await this.client.login(token);
+}
 
   /**
    * Retourne l'instance du client Discord
@@ -61,7 +58,7 @@ export class DiscordClient implements OnModuleInit {
 
   async publishMission(mission: IMission): Promise<string | void> {
     try {
-      const channelId = this.configService.get<string>('DISCORD_CHANNEL_ID');
+      const channelId = process.env.DISCORD_CHANNEL_ID;
       if (!channelId) {
         throw new Error('DISCORD_CHANNEL_ID must be defined');
       }

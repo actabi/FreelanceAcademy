@@ -3,31 +3,39 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
+  // Vérification des variables d'environnement requises
+  const requiredEnvVars = [
+      'DATABASE_URL',
+      'REDIS_URL',
+      'DISCORD_TOKEN',
+      'DISCORD_CHANNEL_ID'
+  ];
+
+  const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+  
+  if (missingEnvVars.length > 0) {
+      console.error('Missing required environment variables:');
+      missingEnvVars.forEach(envVar => {
+          console.error(`- ${envVar}`);
+      });
+      process.exit(1);
+  }
+
   const app = await NestFactory.create(AppModule);
 
   // Gestion gracieuse de l'arrêt
-  process.on("SIGTERM", async () => {
-    console.log("SIGTERM received. Starting graceful shutdown...");
-    await app.close();
-    process.exit(0);
+  process.on('SIGTERM', async () => {
+      console.log('SIGTERM received. Starting graceful shutdown...');
+      await app.close();
+      process.exit(0);
   });
 
-  // Gestion des erreurs non capturées
-  process.on("unhandledRejection", (reason, promise) => {
-    console.error("Unhandled Rejection at:", promise, "reason:", reason);
-  });
-
-  process.on("uncaughtException", (error) => {
-    console.error("Uncaught Exception:", error);
-  });
-
-  // Attendre que la connexion à la base de données soit établie
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  console.log(`Application is running on: ${await app.getUrl()}`);
+  console.log(`Application is running on port ${port}`);
 }
 
-bootstrap().catch((err) => {
-  console.error("Error starting server:", err);
+bootstrap().catch(err => {
+  console.error('Error starting server:', err);
   process.exit(1);
 });
