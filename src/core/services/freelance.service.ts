@@ -1,10 +1,10 @@
 // src/core/services/freelance.service.ts
+
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { FreelanceEntity } from '../domain/entities/freelance.entity';
-import { SkillEntity } from '../domain/entities/skill.entity';
-import { CreateFreelanceDto, UpdateFreelanceDto } from '../domain/dtos';
+import { CreateFreelanceDto, UpdateFreelanceDto } from '../domain/dtos/freelance.dto';
 import { IFreelance } from '../domain/interfaces/freelance.interface';
 import { CacheService } from './cache.service';
 
@@ -13,22 +13,30 @@ export class FreelanceService {
   constructor(
     @InjectRepository(FreelanceEntity)
     private freelanceRepository: Repository<FreelanceEntity>,
-    @InjectRepository(SkillEntity)
-    private skillRepository: Repository<SkillEntity>,
     private cacheService: CacheService
   ) {}
 
   async create(createFreelanceDto: CreateFreelanceDto): Promise<IFreelance> {
     const freelance = this.freelanceRepository.create(createFreelanceDto);
-
-    if (createFreelanceDto.skillIds?.length) {
-      freelance.skills = await this.skillRepository.findBy({id: In(createFreelanceDto.skillIds)});
-    }
-
     const savedFreelance = await this.freelanceRepository.save(freelance);
     await this.cacheService.setFreelance(savedFreelance.id, savedFreelance);
-
     return savedFreelance;
+  }
+
+  async findById(id: string): Promise<IFreelance | null> {
+    const cached = await this.cacheService.getFreelance(id);
+    if (cached) return cached;
+
+    const freelance = await this.freelanceRepository.findOne({
+      where: { id },
+      relations: ['skills', 'applications']
+    });
+
+    if (freelance) {
+      await this.cacheService.setFreelance(id, freelance);
+    }
+
+    return freelance;
   }
 
   async findByDiscordId(discordId: string): Promise<IFreelance | null> {
@@ -48,33 +56,15 @@ export class FreelanceService {
   }
 
   async update(id: string, updateFreelanceDto: UpdateFreelanceDto): Promise<IFreelance> {
-    const freelance = await this.freelanceRepository.findOne({
-      where: { id },
-      relations: ['skills']
-    });
-
+    const freelance = await this.findById(id);
     if (!freelance) {
       throw new NotFoundException(`Freelance with ID "${id}" not found`);
-    }
-
-    if (updateFreelanceDto.skillIds) {
-      freelance.skills = await this.skillRepository.findBy({id: In(updateFreelanceDto.skillIds)});
     }
 
     Object.assign(freelance, updateFreelanceDto);
     const updatedFreelance = await this.freelanceRepository.save(freelance);
     
-    await this.cacheService.invalidateFreelance(id);
+    await this.cacheService.invalidateFreelance(id, freelance.discordId);
     return updatedFreelance;
-  }
-
-  async getProfileByDiscordId(discordId: string): Promise<any> {
-    // mock implementation
-    return {
-      name: 'Test User',
-      dailyRate: 500,
-      skills: ['TypeScript', 'React'],
-      isAvailable: true,
-    };
   }
 }

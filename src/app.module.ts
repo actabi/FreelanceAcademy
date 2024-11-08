@@ -16,6 +16,8 @@ import { HealthController } from "./api/controllers/health.controller";
 import { RedisService } from "./core/services/redis.service";
 import { CacheService } from "./core/services/cache.service";
 import { AlertService } from "./core/services/alert.service";
+import { BotModule } from './bot/bot.module';
+import { NotificationModule } from './core/notification/notification.module';
 
 @Module({
   imports: [
@@ -53,6 +55,8 @@ import { AlertService } from "./core/services/alert.service";
       ApplicationEntity,
       AlertEntity
     ]),
+    BotModule,
+    NotificationModule,
   ],
   controllers: [
     HealthController, // Pour monitorer l'état de l'application

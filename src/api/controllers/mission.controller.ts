@@ -12,13 +12,16 @@ import {
     HttpStatus,
     HttpException
   } from '@nestjs/common';
-  import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
   import { MissionService } from '../../core/services/mission.service';
   import { CreateMissionDto, UpdateMissionDto } from '../../core/domain/dtos';
+  import { MissionFilterDto } from 'src/core/domain/dtos/mission-filter.dto';
   import { AuthGuard } from '../guards/auth.guard';
   import { RateLimit } from '../decorators/rate-limit.decorator';
+  import { MissionStatus, MissionLocation } from 'src/core/domain/enums/mission.enums';
   
   @Controller('api/missions')
+  @ApiTags('missions')
   @UseGuards(AuthGuard)
   export class MissionController {
     constructor(private readonly missionService: MissionService) {}
@@ -37,6 +40,7 @@ import {
     }
   
     @Get()
+    @ApiOperation({ summary: 'Get all missions with optional filters' })
     @RateLimit(1000, 60)
     async getMissions(
       @Query('status') status?: string,
@@ -46,13 +50,24 @@ import {
       @Query('location') location?: string,
     ) {
       try {
-        return await this.missionService.findAll({
-          status,
-          skills: skills?.split(','),
-          minRate,
-          maxRate,
-          location
-        });
+        // Vérifier si des filtres sont fournis
+        const hasFilters = status || skills || minRate || maxRate || location;
+        
+        if (!hasFilters) {
+          // Si aucun filtre n'est fourni, utiliser la méthode simple
+          return await this.missionService.findAll();
+        }
+  
+        // Si des filtres sont fournis, les appliquer
+        const filters: MissionFilterDto = {
+          status: status as MissionStatus,
+          skills: skills?.split(',').map(s => s.trim()),
+          minRate: minRate ? Number(minRate) : undefined,
+          maxRate: maxRate ? Number(maxRate) : undefined,
+          location: location as MissionLocation
+        };
+  
+        return await this.missionService.findAll(filters);
       } catch (error) {
         throw new HttpException(
           'Failed to fetch missions',

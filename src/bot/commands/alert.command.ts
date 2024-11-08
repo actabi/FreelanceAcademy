@@ -2,6 +2,8 @@
 import { Injectable } from '@nestjs/common';
 import { CommandInteraction, EmbedBuilder } from 'discord.js';
 import { AlertService } from '../../core/services/alert.service';
+import { MissionService } from '../../core/services/mission.service';
+import { FreelanceService } from '../../core/services/freelance.service';
 import { ICommandHandler } from './interfaces/command.handler.interface';
 
 
@@ -118,28 +120,5 @@ export class MissionCommands {
     const id = interaction.options.getString('id', true);
     const mission = await this.missionService.findOne(id);
     // Handle response
-  }
-}
-
-// Profile command
-@Injectable()
-export class ProfileCommand {
-  constructor(private readonly freelanceService: FreelanceService) {}
-
-  async execute(interaction: CommandInteraction) {
-    if (!interaction.isChatInputCommand()) return;
-
-    const subcommand = interaction.options.getSubcommand(true);
-    
-    switch (subcommand) {
-      case 'view':
-        await this.viewProfile(interaction);
-        break;
-      case 'edit':
-        await this.editProfile(interaction);
-        break;
-      default:
-        await interaction.reply({ content: 'Commande invalide', ephemeral: true });
-    }
   }
 }

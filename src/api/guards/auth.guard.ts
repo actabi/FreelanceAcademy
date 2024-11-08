@@ -1,12 +1,4 @@
-// src/api/decorators/rate-limit.decorator.ts
-import { SetMetadata } from '@nestjs/common';
-
-export const RATE_LIMIT_KEY = 'rateLimit';
-export const RateLimit = (limit: number, duration: number) =>
-  SetMetadata(RATE_LIMIT_KEY, { limit, duration });
-
-// src/api/guards/auth.guard.ts
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
@@ -18,15 +10,17 @@ export class AuthGuard implements CanActivate {
     const token = this.extractTokenFromHeader(request);
     
     if (!token) {
-      return false;
+      throw new UnauthorizedException('No token provided');
     }
 
     try {
-      const payload = await this.jwtService.verifyAsync(token);
+      const payload = await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_SECRET // Assurez-vous d'avoir cette variable d'environnement
+      });
       request.user = payload;
       return true;
-    } catch {
-      return false;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
     }
   }
 

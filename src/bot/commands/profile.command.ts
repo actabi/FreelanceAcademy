@@ -3,20 +3,21 @@ import { Injectable } from '@nestjs/common';
 import { CommandInteraction, EmbedBuilder } from 'discord.js';
 import { ICommandHandler } from './interfaces/command.handler.interface';
 import { FreelanceService } from '../../core/services/freelance.service';
-
 @Injectable()
-export class ProfileCommand implements ICommandHandler {
+export class ProfileCommand {
   constructor(private readonly freelanceService: FreelanceService) {}
 
-  async execute(interaction: CommandInteraction): Promise<void> {
-    const subcommand = interaction.options.getSubcommand();
+  async execute(interaction: CommandInteraction) {
+    if (!interaction.isChatInputCommand()) return;
+
+    const subcommand = interaction.options.getSubcommand(true);
     
     switch (subcommand) {
       case 'view':
         await this.viewProfile(interaction);
         break;
-      case 'update':
-        await this.updateProfile(interaction);
+      case 'edit':
+        await this.editProfile(interaction);
         break;
       default:
         await interaction.reply({ content: 'Commande invalide', ephemeral: true });
@@ -24,7 +25,7 @@ export class ProfileCommand implements ICommandHandler {
   }
 
   private async viewProfile(interaction: CommandInteraction): Promise<void> {
-    const profile = await this.freelanceService.getProfileByDiscordId(interaction.user.id);
+    const profile = await this.freelanceService.findByDiscordId(interaction.user.id);
     
     if (!profile) {
       await interaction.reply({ 
@@ -52,5 +53,21 @@ export class ProfileCommand implements ICommandHandler {
     // Démarrer le processus de mise à jour via modal Discord
     const modal = this.createProfileModal();
     await interaction.showModal(modal);
+  }
+
+  private createProfileModal() {
+    // Implement the logic to create and return a Discord modal
+    return {
+      title: 'Update Profile',
+      customId: 'updateProfileModal',
+      components: [
+        // Add modal components here
+      ],
+    };
+  }
+
+  private async editProfile(interaction: CommandInteraction) {
+    // Implement profile edit logic
+    await interaction.reply({ content: 'Édition du profil', ephemeral: true });
   }
 }

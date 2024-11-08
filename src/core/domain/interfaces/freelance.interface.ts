@@ -13,4 +13,5 @@ export interface IFreelance {
   applications: IApplication[];
   createdAt: Date;
   updatedAt: Date;
+  isAvailable: boolean;
 }
