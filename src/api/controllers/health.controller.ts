@@ -2,7 +2,7 @@
 import { Controller, Get } from "@nestjs/common";
 import { InjectConnection } from "@nestjs/typeorm";
 import { Connection } from "typeorm";
-import { RedisService } from "../../infrastructure/cache/redis.client";
+import { RedisService } from "../../core/services/redis.service";
 
 @Controller("health")
 export class HealthController {

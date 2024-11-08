@@ -24,19 +24,27 @@ export class CommandService implements OnModuleInit {
       .map(wrapper => Reflect.getMetadata(COMMAND_KEY, wrapper.metatype))
       .filter(command => command);
 
-    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+    const token = process.env.DISCORD_TOKEN;
+    const clientId = process.env.DISCORD_CLIENT_ID;
+
+    if (!token || !clientId) {
+      throw new Error('DISCORD_TOKEN and DISCORD_CLIENT_ID must be defined');
+    }
+
+    const rest = new REST({ version: '10' }).setToken(token);
 
     try {
       console.log('Started refreshing application (/) commands.');
 
       await rest.put(
-        Routes.applicationCommands(process.env.DISCORD_CLIENT_ID),
+        Routes.applicationCommands(clientId),
         { body: commands }
       );
 
       console.log('Successfully reloaded application (/) commands.');
     } catch (error) {
-      console.error(error);
+      console.error('Failed to register commands:', error);
+      throw error;
     }
   }
 }

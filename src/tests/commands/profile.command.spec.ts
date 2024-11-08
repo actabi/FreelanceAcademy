@@ -9,7 +9,7 @@ describe('ProfileCommand', () => {
   let freelanceService: FreelanceService;
 
   const mockFreelanceService = {
-    getProfileByDiscordId: jest.fn(),
+    findByDiscordId: jest.fn(),
     updateProfile: jest.fn(),
   };
 
@@ -38,9 +38,10 @@ describe('ProfileCommand', () => {
           id: 'test-user-id',
         },
         reply: jest.fn(),
+        isChatInputCommand: () => true,
       } as unknown as CommandInteraction;
 
-      mockFreelanceService.getProfileByDiscordId.mockResolvedValue({
+      mockFreelanceService.findByDiscordId.mockResolvedValue({
         name: 'Test User',
         dailyRate: 500,
         skills: ['TypeScript', 'React'],
@@ -48,8 +49,9 @@ describe('ProfileCommand', () => {
       });
 
       await command.execute(interaction);
+      
       expect(interaction.reply).toHaveBeenCalled();
-            expect(freelanceService.getProfileByDiscordId).toHaveBeenCalledWith('test-user-id');
-          });
-        });
-      });
+      expect(freelanceService.findByDiscordId).toHaveBeenCalledWith('test-user-id');
+    });
+  });
+});

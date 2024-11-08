@@ -1,22 +1,23 @@
-// src/core/notification/notification.module.ts
-
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { NotificationService } from '../services/notification.service';
 import { CacheService } from '../services/cache.service';
 import { DiscordClient } from '../../bot/discord.client';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true // Rend la configuration accessible partout
-    })
+    ConfigModule,
+    RedisModule
   ],
   providers: [
     NotificationService,
     CacheService,
     DiscordClient
   ],
-  exports: [NotificationService] // Exporte le service pour qu'il soit utilisable ailleurs
+  exports: [
+    NotificationService,
+    CacheService
+  ]
 })
 export class NotificationModule {}

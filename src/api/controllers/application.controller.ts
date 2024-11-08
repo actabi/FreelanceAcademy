@@ -9,8 +9,10 @@ import {
     UseGuards,
     ValidationPipe,
     HttpStatus,
-    HttpException
+    HttpException,
+    Query
   } from '@nestjs/common';
+
   import { ApplicationService } from '../../core/services/application.service';
   import { CreateApplicationDto, UpdateApplicationDto } from '../../core/domain/dtos';
   import { AuthGuard } from '../guards/auth.guard';

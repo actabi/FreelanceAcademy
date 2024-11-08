@@ -1,6 +1,6 @@
 // src/api/middlewares/rate-limit.middleware.ts
 import { Injectable, NestMiddleware, HttpException, HttpStatus } from '@nestjs/common';
-import { RedisService } from '../../core/services/cache/redis.service';
+import { RedisService } from '../../core/services/redis.service';
 
 @Injectable()
 export class RateLimitMiddleware implements NestMiddleware {

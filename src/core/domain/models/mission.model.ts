@@ -1,5 +1,6 @@
 // src/core/domain/models/mission.model.ts
 import { MissionStatus, MissionLocation, IMission } from '../interfaces/mission';
+import { ISkill } from '../interfaces/skill.interface';
 
 export class Mission implements IMission {
   id: string;
@@ -12,7 +13,7 @@ export class Mission implements IMission {
   endDate?: Date;
   createdAt: Date;
   updatedAt: Date;
-  skills: string[];
+  skills: ISkill[];
   location: MissionLocation;
   companyName?: string;
   address?: string;

@@ -1,3 +1,4 @@
+// src/bot/discord.client.ts
 import { 
   Client, 
   TextChannel, 

@@ -1,31 +1,31 @@
 // data-source.ts
 import { DataSource, DataSourceOptions } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
 import * as dotenv from 'dotenv';
-import { MissionEntity } from './src/infrastructure/database/entities/mission.entity';
+import { MissionEntity } from './src/core/domain/entities/mission.entity';
+import { SkillEntity } from './src/core/domain/entities/skill.entity';
 
 dotenv.config();
 
+const getDatabaseUrl = () => {
+  // En développement, utilisez l'URL de la base de données locale
+  if (process.env.NODE_ENV === 'development') {
+    return process.env.DATABASE_URL_LOCAL;
+  }
+  // En production, utilisez l'URL Railway
+  return process.env.DATABASE_URL;
+};
+
 const options: DataSourceOptions = {
     type: 'postgres',
-    url: process.env.DATABASE_URL,
-    entities: [MissionEntity],
-    migrations: ['src/infrastructure/database/migrations/*.ts'],
-    ssl: process.env.DATABASE_URL?.includes('localhost') ? false : {
+    url: getDatabaseUrl(),
+    entities: [MissionEntity, SkillEntity ],
+    migrations: ['src/core/infrastructure/database/migrations/*.ts'],
+    ssl: process.env.NODE_ENV === 'production' ? {
         rejectUnauthorized: false
-    },
+    } : false,
     synchronize: false,
     logging: true,
     migrationsRun: true,
 };
 
 export const AppDataSource = new DataSource(options);
-
-// Gestion des erreurs d'initialisation
-AppDataSource.initialize()
-    .then(() => {
-        console.log('Data Source has been initialized!');
-    })
-    .catch((err) => {
-        console.error('Error during Data Source initialization:', err);
-    });

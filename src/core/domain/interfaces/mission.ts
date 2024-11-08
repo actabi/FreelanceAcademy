@@ -1,4 +1,6 @@
 // src/core/domain/interfaces/mission.ts
+import { ISkill } from './skill.interface';
+
 export enum MissionStatus {
     DRAFT = 'DRAFT',
     PUBLISHED = 'PUBLISHED',
@@ -24,7 +26,7 @@ export enum MissionStatus {
     endDate?: Date;
     createdAt: Date;
     updatedAt: Date;
-    skills: string[];
+    skills: ISkill[];
     location: MissionLocation;
     companyName?: string;
     address?: string;
