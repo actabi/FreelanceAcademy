@@ -1,43 +1,38 @@
 // src/bot/commands/alert.command.ts
 import { Injectable } from '@nestjs/common';
-import { CommandInteraction, EmbedBuilder } from 'discord.js';
+import { CommandInteraction, EmbedBuilder, ChatInputCommandInteraction } from 'discord.js';
 import { AlertService } from '../../core/services/alert.service';
-import { MissionService } from '../../core/services/mission.service';
-import { FreelanceService } from '../../core/services/freelance.service';
 import { ICommandHandler } from './interfaces/command.handler.interface';
 
-
-// Command decorator
-import { SetMetadata } from '@nestjs/common';
-
-export function Command(options: { name: string, description: string, options?: any[] }) {
-  return SetMetadata('command', options);
-}
 
 @Injectable()
 export class AlertCommand implements ICommandHandler {
   constructor(private readonly alertService: AlertService) {}
 
   async execute(interaction: CommandInteraction): Promise<void> {
-    const subcommand = interaction.options.getSubcommand();
+    if (!interaction.isChatInputCommand()) return;
+
+    const command = interaction as ChatInputCommandInteraction;
+    const subcommand = command.options.getSubcommand(true);
     
     switch (subcommand) {
       case 'add':
-        await this.addAlert(interaction);
+        await this.addAlert(command);
         break;
       case 'list':
-        await this.listAlerts(interaction);
+        await this.listAlerts(command);
         break;
       case 'remove':
-        await this.removeAlert(interaction);
+        await this.removeAlert(command);
         break;
       default:
         await interaction.reply({ content: 'Commande invalide', ephemeral: true });
     }
   }
 
-  private async addAlert(interaction: CommandInteraction): Promise<void> {
-    const skills = interaction.options.getString('skills')?.split(',').map(s => s.trim()) || [];
+  private async addAlert(interaction: ChatInputCommandInteraction): Promise<void> {
+    const skillsString = interaction.options.getString('skills');
+    const skills = skillsString?.split(',').map((s: string) => s.trim()) || [];
     const minRate = interaction.options.getNumber('min_rate') || 0;
     const maxRate = interaction.options.getNumber('max_rate') || 9999;
     
@@ -48,13 +43,13 @@ export class AlertCommand implements ICommandHandler {
       maxRate
     });
 
-    await interaction.reply({ 
+    await interaction.reply({
       content: 'Alerte créée avec succès !',
-      ephemeral: true 
+      ephemeral: true
     });
   }
 
-  private async listAlerts(interaction: CommandInteraction): Promise<void> {
+  private async listAlerts(interaction: ChatInputCommandInteraction): Promise<void> {
     const alerts = await this.alertService.getAlertsByUserId(interaction.user.id);
     
     if (alerts.length === 0) {
@@ -79,7 +74,7 @@ export class AlertCommand implements ICommandHandler {
     await interaction.reply({ embeds: [embed], ephemeral: true });
   }
 
-  private async removeAlert(interaction: CommandInteraction): Promise<void> {
+  private async removeAlert(interaction: ChatInputCommandInteraction): Promise<void> {
     const alertId = interaction.options.getString('id', true);
     await this.alertService.deleteAlert(alertId);
     
@@ -87,38 +82,5 @@ export class AlertCommand implements ICommandHandler {
       content: 'Alerte supprimée avec succès !',
       ephemeral: true
     });
-  }
-}
-
-// Mission commands
-@Injectable()
-export class MissionCommands {
-  constructor(private missionService: MissionService) {}
-
-  @Command({
-    name: 'missions',
-    description: 'Liste des missions disponibles'
-  })
-  async listMissions(interaction: CommandInteraction) {
-    const missions = await this.missionService.findAll();
-    // Handle response
-  }
-
-  @Command({
-    name: 'mission',
-    description: 'Détails d\'une mission',
-    options: [{
-      name: 'id',
-      description: 'ID de la mission',
-      type: 'STRING',
-      required: true
-    }]
-  })
-  async getMission(interaction: CommandInteraction) {
-    if (!interaction.isChatInputCommand()) return;
-    
-    const id = interaction.options.getString('id', true);
-    const mission = await this.missionService.findOne(id);
-    // Handle response
   }
 }
