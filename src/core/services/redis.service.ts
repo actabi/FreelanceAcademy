@@ -1,11 +1,12 @@
 // src/core/services/redis.service.ts
 
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly client: Redis;
+  private readonly logger = new Logger(RedisService.name);
 
   constructor() {
     const redisUrl = process.env.REDIS_URL + "?family=0";
@@ -14,22 +15,49 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         throw new Error('REDIS_URL must be defined in environment variables');
     }
 
+    this.logger.log('Initializing Redis connection...');
+    this.logger.debug(`Redis URL format check: ${redisUrl.split('@')[1]}`); // Log sans les credentials
+
     this.client = new Redis(redisUrl, {
-        retryStrategy: (times) => {
-            if (times <= 30) {
-                return 2000;
-            }
-            return null;
-        },
-        tls: {
-            rejectUnauthorized: false
-        }
+      maxRetriesPerRequest: 3,
+      retryStrategy: (times) => {
+        const delay = Math.min(times * 500, 2000);
+        this.logger.warn(`Redis connection attempt ${times}. Retrying in ${delay}ms...`);
+        return delay;
+      },
+      reconnectOnError: (err) => {
+        this.logger.error(`Redis reconnect on error: ${err.message}`);
+        return true;
+      },
+      tls: {
+        rejectUnauthorized: false
+      },
+      family: 4,
+      connectTimeout: 20000,
+      maxLoadingRetryTime: 20000,
+      enableReadyCheck: true
+    });
+
+    this.client.on('connect', () => {
+      this.logger.log('Redis client connected');
+    });
+
+    this.client.on('ready', () => {
+      this.logger.log('Redis client ready');
     });
 
     this.client.on('error', (err) => {
-        console.error('Redis Client Error:', err);
+      this.logger.error(`Redis Client Error: ${err.message}`);
     });
-}
+
+    this.client.on('close', () => {
+      this.logger.warn('Redis connection closed');
+    });
+
+    this.client.on('reconnecting', () => {
+      this.logger.warn('Redis client reconnecting');
+    });
+  }
 
   async onModuleInit() {
     try {
@@ -43,6 +71,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy() {
     await this.client.quit();
+    this.logger.log('Redis connection closed');
   }
 
   getClient(): Redis {
