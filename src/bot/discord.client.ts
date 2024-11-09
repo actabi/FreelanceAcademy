@@ -16,32 +16,73 @@ import { MissionFormatter } from './interactions/mission.formatter';
 export class DiscordClient implements OnModuleInit {
   private readonly client: Client;
   private readonly logger = new Logger(DiscordClient.name);
+  private readonly isDiscordEnabled: boolean;
 
   constructor() {
     this.client = new Client({
-        intents: [
-            GatewayIntentBits.Guilds,
-            GatewayIntentBits.GuildMessages,
-            GatewayIntentBits.GuildMessageReactions,
-            GatewayIntentBits.DirectMessages,
-            GatewayIntentBits.MessageContent
-        ]
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMessageReactions,
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.MessageContent
+      ]
     });
-}
 
-async onModuleInit() {
-  const token = process.env.DISCORD_TOKEN;
-  if (!token) {
-      throw new Error('DISCORD_TOKEN must be defined');
+    // Vérifier si Discord est activé via la variable d'environnement
+    this.isDiscordEnabled = process.env.ENABLE_DISCORD !== 'false';
   }
-  await this.client.login(token);
-}
+
+  async onModuleInit() {
+    if (!this.isDiscordEnabled) {
+      this.logger.warn('Discord integration is disabled');
+      return;
+    }
+
+    const token = process.env.DISCORD_TOKEN;
+    if (!token) {
+      this.logger.error('DISCORD_TOKEN is not defined');
+      if (process.env.FAIL_ON_DISCORD_ERROR === 'true') {
+        throw new Error('DISCORD_TOKEN must be defined');
+      }
+      return;
+    }
+
+    try {
+      await this.validateAndConnect(token);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Failed to initialize Discord client: ${errorMessage}`);
+      if (process.env.FAIL_ON_DISCORD_ERROR === 'true') {
+        throw error;
+      }
+    }
+  }
+
+  private async validateAndConnect(token: string): Promise<void> {
+    // Vérification basique du format du token
+    if (!/^[A-Za-z0-9_-]{24,}$/.test(token)) {
+      throw new Error('Invalid Discord token format');
+    }
+
+    try {
+      await this.client.login(token);
+      this.setupEventHandlers();
+      this.logger.log('Discord client successfully connected');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new Error(`Discord login failed: ${errorMessage}`);
+    }
+  }
 
   /**
    * Retourne l'instance du client Discord
    * @returns Client Discord.js
    */
   getClient(): Client {
+    if (!this.client?.isReady()) {
+      throw new Error('Discord client is not ready');
+    }
     return this.client;
   }
 
@@ -52,6 +93,16 @@ async onModuleInit() {
 
     this.client.on('error', (error) => {
       this.logger.error('Discord client error:', error);
+    });
+
+    // Gestion de la déconnexion
+    this.client.on('disconnect', () => {
+      this.logger.warn('Discord client disconnected');
+    });
+
+    // Tentative de reconnexion
+    this.client.on('reconnecting', () => {
+      this.logger.log('Discord client attempting to reconnect...');
     });
   }
 
