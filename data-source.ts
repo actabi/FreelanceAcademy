@@ -1,31 +1,31 @@
-// // data-source.ts
-// import { DataSource, DataSourceOptions } from 'typeorm';
-// import * as dotenv from 'dotenv';
-// import { MissionEntity } from './src/core/domain/entities/mission.entity';
-// import { SkillEntity } from './src/core/domain/entities/skill.entity';
+import { DataSource } from "typeorm";
+import { MissionEntity } from "./src/core/domain/entities/mission.entity";
+import { FreelanceEntity } from "./src/core/domain/entities/freelance.entity";
+import { SkillEntity } from "./src/core/domain/entities/skill.entity";
+import { ApplicationEntity } from "./src/core/domain/entities/application.entity";
+import { AlertEntity } from "./src/core/domain/entities/alert.entity";
+import { config } from 'dotenv';
 
-// dotenv.config();
+// Charger les variables d'environnement
+config();
 
-// const getDatabaseUrl = () => {
-//   // En développement, utilisez l'URL de la base de données locale
-//   if (process.env.NODE_ENV === 'development') {
-//     return process.env.DATABASE_URL_LOCAL;
-//   }
-//   // En production, utilisez l'URL Railway
-//   return process.env.DATABASE_URL;
-// };
+export const AppDataSource = new DataSource({
+    type: "postgres",
+    url: process.env.DATABASE_URL + "?family=0",
+    entities: [
+        MissionEntity,
+        FreelanceEntity,
+        SkillEntity,
+        ApplicationEntity,
+        AlertEntity
+    ],
+    migrations: ["src/core/infrastructure/database/migrations/*.{ts,js}"],
+    migrationsTableName: "migrations",
+    ssl: {
+        rejectUnauthorized: false
+    },
+    synchronize: false,
+    logging: true
+});
 
-// const options: DataSourceOptions = {
-//     type: 'postgres',
-//     url: getDatabaseUrl(),
-//     entities: [MissionEntity, SkillEntity ],
-//     migrations: ['src/core/infrastructure/database/migrations/*.ts'],
-//     ssl: process.env.NODE_ENV === 'production' ? {
-//         rejectUnauthorized: false
-//     } : false,
-//     synchronize: false,
-//     logging: true,
-//     migrationsRun: true,
-// };
-
-// export const AppDataSource = new DataSource(options);
+export default AppDataSource;

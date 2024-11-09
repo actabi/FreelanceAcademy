@@ -2,6 +2,7 @@
     "compilerOptions": {
       "target": "ES2021",
       "module": "commonjs",
+      "moduleResolution": "node",
       "outDir": "./dist",
       "rootDir": "./src",
       "strict": true,
@@ -14,6 +15,6 @@
       "forceConsistentCasingInFileNames": true,
       "baseUrl": "./",
     },
-    "include": ["src/**/*"],
+    "include": ["src/**/*", "data-source.ts"],
     "exclude": ["node_modules", "dist"]
   }
