@@ -59,43 +59,58 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   //   });
   // }
 
-  constructor() {
-    // Utilisation du hostname privé Railway pour Redis
-    const redisHost = process.env.REDISHOST;
-    const redisPort = process.env.REDISPORT ? parseInt(process.env.REDISPORT, 10) : undefined;
-    const redisPassword = process.env.REDISPASSWORD;
-
-    if (!redisHost) {
-      throw new Error('Redis host configuration is missing');
+    constructor() {
+      // Vérifier d'abord si nous avons une URL Redis complète
+      const redisUrl = process.env.REDIS_URL;
+      
+      if (!redisUrl) {
+        this.logger.error('REDIS_URL is not defined');
+        throw new Error('REDIS_URL must be defined');
+      }
+  
+      this.logger.log('Initializing Redis connection...');
+  
+      try {
+        // Utiliser directement l'URL fournie par Railway
+        this.client = new Redis(redisUrl, {
+          maxRetriesPerRequest: 5,
+          retryStrategy: (times) => {
+            const delay = Math.min(times * 1000, 5000);
+            this.logger.warn(`Redis connection attempt ${times}. Retrying in ${delay}ms...`);
+            return delay;
+          },
+          reconnectOnError: (err) => {
+            this.logger.error(`Redis connection error: ${err.message}`);
+            return true;
+          },
+          enableReadyCheck: true,
+          connectionName: 'main',
+          lazyConnect: true,
+          family: 4
+        });
+      } catch (error) {
+        const errorMessage = (error as Error).message;
+        this.logger.error(`Failed to create Redis client: ${errorMessage}`);
+        throw error;
+      }
+  
+      // Log listeners
+      this.client.on('connect', () => {
+        this.logger.log('Redis client connected');
+      });
+  
+      this.client.on('ready', () => {
+        this.logger.log('Redis client ready');
+      });
+  
+      this.client.on('error', (err) => {
+        this.logger.error(`Redis error: ${err.message}`);
+      });
+  
+      this.client.on('close', () => {
+        this.logger.warn('Redis connection closed');
+      });
     }
-
-    this.logger.log(`Connecting to Redis at host: ${redisHost}`);
-
-    const config = {
-      host: redisHost,
-      port: redisPort,
-      password: redisPassword,
-      tls: undefined, // Désactivé car nous utilisons le réseau privé
-      retryStrategy: (times: number) => {
-        const delay = Math.min(times * 1000, 5000);
-        this.logger.warn(`Redis connection attempt ${times}. Retrying in ${delay}ms...`);
-        return delay;
-      },
-      maxRetriesPerRequest: 3,
-      enableReadyCheck: true,
-      family: 4
-    };
-
-    this.client = new Redis(config);
-
-    this.client.on('connect', () => {
-      this.logger.log('Redis client connected successfully');
-    });
-
-    this.client.on('error', (err) => {
-      this.logger.error(`Redis Client Error: ${err.message}`);
-    });
-  }
 
   async onModuleInit() {
     try {
