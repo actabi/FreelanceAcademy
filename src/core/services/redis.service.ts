@@ -8,54 +8,92 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly client: Redis;
   private readonly logger = new Logger(RedisService.name);
 
-  constructor() {
-    const redisUrl = process.env.REDIS_URL + "?family=0";
+  // constructor() {
+  //   const redisUrl = process.env.REDIS_URL + "?family=0";
     
-    if (!redisUrl) {
-        throw new Error('REDIS_URL must be defined in environment variables');
+  //   if (!redisUrl) {
+  //       throw new Error('REDIS_URL must be defined in environment variables');
+  //   }
+
+  //   this.logger.log('Initializing Redis connection...');
+  //   this.logger.debug(`Redis URL format check: ${redisUrl.split('@')[1]}`); // Log sans les credentials
+
+  //   this.client = new Redis(redisUrl, {
+  //     maxRetriesPerRequest: 3,
+  //     retryStrategy: (times) => {
+  //       const delay = Math.min(times * 500, 2000);
+  //       this.logger.warn(`Redis connection attempt ${times}. Retrying in ${delay}ms...`);
+  //       return delay;
+  //     },
+  //     reconnectOnError: (err) => {
+  //       this.logger.error(`Redis reconnect on error: ${err.message}`);
+  //       return true;
+  //     },
+  //     tls: {
+  //       rejectUnauthorized: false
+  //     },
+  //     family: 4,
+  //     connectTimeout: 20000,
+  //     maxLoadingRetryTime: 20000,
+  //     enableReadyCheck: true
+  //   });
+
+  //   this.client.on('connect', () => {
+  //     this.logger.log('Redis client connected');
+  //   });
+
+  //   this.client.on('ready', () => {
+  //     this.logger.log('Redis client ready');
+  //   });
+
+  //   this.client.on('error', (err) => {
+  //     this.logger.error(`Redis Client Error: ${err.message}`);
+  //   });
+
+  //   this.client.on('close', () => {
+  //     this.logger.warn('Redis connection closed');
+  //   });
+
+  //   this.client.on('reconnecting', () => {
+  //     this.logger.warn('Redis client reconnecting');
+  //   });
+  // }
+
+  constructor() {
+    // Utilisation du hostname privé Railway pour Redis
+    const redisHost = process.env.REDISHOST;
+    const redisPort = process.env.REDISPORT ? parseInt(process.env.REDISPORT, 10) : undefined;
+    const redisPassword = process.env.REDISPASSWORD;
+
+    if (!redisHost) {
+      throw new Error('Redis host configuration is missing');
     }
 
-    this.logger.log('Initializing Redis connection...');
-    this.logger.debug(`Redis URL format check: ${redisUrl.split('@')[1]}`); // Log sans les credentials
+    this.logger.log(`Connecting to Redis at host: ${redisHost}`);
 
-    this.client = new Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
-      retryStrategy: (times) => {
-        const delay = Math.min(times * 500, 2000);
+    const config = {
+      host: redisHost,
+      port: redisPort,
+      password: redisPassword,
+      tls: undefined, // Désactivé car nous utilisons le réseau privé
+      retryStrategy: (times: number) => {
+        const delay = Math.min(times * 1000, 5000);
         this.logger.warn(`Redis connection attempt ${times}. Retrying in ${delay}ms...`);
         return delay;
       },
-      reconnectOnError: (err) => {
-        this.logger.error(`Redis reconnect on error: ${err.message}`);
-        return true;
-      },
-      tls: {
-        rejectUnauthorized: false
-      },
-      family: 4,
-      connectTimeout: 20000,
-      maxLoadingRetryTime: 20000,
-      enableReadyCheck: true
-    });
+      maxRetriesPerRequest: 3,
+      enableReadyCheck: true,
+      family: 4
+    };
+
+    this.client = new Redis(config);
 
     this.client.on('connect', () => {
-      this.logger.log('Redis client connected');
-    });
-
-    this.client.on('ready', () => {
-      this.logger.log('Redis client ready');
+      this.logger.log('Redis client connected successfully');
     });
 
     this.client.on('error', (err) => {
       this.logger.error(`Redis Client Error: ${err.message}`);
-    });
-
-    this.client.on('close', () => {
-      this.logger.warn('Redis connection closed');
-    });
-
-    this.client.on('reconnecting', () => {
-      this.logger.warn('Redis client reconnecting');
     });
   }
 
