@@ -1,6 +1,7 @@
 // src/main.ts
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
+import { getConnectionToken } from '@nestjs/typeorm';
 
 async function bootstrap() {
   // Vérification des variables d'environnement requises
@@ -21,7 +22,16 @@ async function bootstrap() {
       process.exit(1);
   }
 
-  const app = await NestFactory.create(AppModule);
+  // const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn', 'debug', 'log', 'verbose'], // Activer tous les niveaux de log
+  });
+
+    // Récupérer la connexion TypeORM
+    const connection = app.get(getConnectionToken());
+    if (connection.isConnected) {
+      console.log('PostgreSQL Database connected successfully');
+    }
 
   // Gestion gracieuse de l'arrêt
   process.on('SIGTERM', async () => {
