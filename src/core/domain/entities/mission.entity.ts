@@ -12,9 +12,10 @@ import {
 import { MissionStatus, MissionLocation, MissionPriority, MissionVisibility } from '../enums/mission.enums';
 import { SkillEntity } from './skill.entity';
 import { ApplicationEntity } from './application.entity';
+import { IMission } from '../interfaces/mission.interface';
 
 @Entity('mission')
-export class MissionEntity {
+export class MissionEntity implements IMission {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -27,9 +28,9 @@ export class MissionEntity {
   @Column({
     type: 'enum',
     enum: MissionStatus,
-    enumName: 'mission_status_enum', // Ajoutez ceci
     default: MissionStatus.DRAFT
-})
+  })
+  status!: MissionStatus;
 
 @Column({
     type: 'enum',

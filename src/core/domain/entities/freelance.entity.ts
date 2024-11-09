@@ -1,3 +1,5 @@
+// src/core/domain/entities/freelance.entity.ts
+
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -10,9 +12,10 @@ import {
 } from 'typeorm';
 import { SkillEntity } from './skill.entity';
 import { ApplicationEntity } from './application.entity';
+import { IFreelance } from '../interfaces/freelance.interface';
 
 @Entity('freelance')
-export class FreelanceEntity {
+export class FreelanceEntity implements IFreelance {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

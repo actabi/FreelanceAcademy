@@ -16,6 +16,19 @@ export class FreelanceService {
     private cacheService: CacheService
   ) {}
 
+  private convertToInterface(entity: FreelanceEntity): IFreelance {
+    return {
+      ...entity,
+      skills: entity.skills?.map(skill => ({
+        ...skill,
+        missions: skill.missions?.map(mission => ({
+          ...mission,
+          status: mission.status // Ensure this property exists
+        }))
+      }))
+    };
+  }
+
   async create(createFreelanceDto: CreateFreelanceDto): Promise<IFreelance> {
     const freelance = this.freelanceRepository.create(createFreelanceDto);
     const savedFreelance = await this.freelanceRepository.save(freelance);
@@ -33,10 +46,12 @@ export class FreelanceService {
     });
 
     if (freelance) {
-      await this.cacheService.setFreelance(id, freelance);
+      const freelanceInterface = this.convertToInterface(freelance);
+      await this.cacheService.setFreelance(id, freelanceInterface);
+      return freelanceInterface;
     }
 
-    return freelance;
+    return null;
   }
 
   async findByDiscordId(discordId: string): Promise<IFreelance | null> {

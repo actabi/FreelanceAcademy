@@ -6,6 +6,8 @@ WORKDIR /app
 # Copier les fichiers de dépendances
 COPY package*.json ./
 
+npm run migration:revert
+
 # Installer les dépendancesd
 RUN npm install
 

@@ -52,47 +52,6 @@ export class MissionService {
     return publishedMission;
   }
 
-  // async findAll(): Promise<IMission[]> {
-  //   return this.missionRepository.find({
-  //     relations: ['skills', 'applications'],
-  //     order: {
-  //       createdAt: 'DESC'
-  //     }
-  //   });
-  // }
-
-  // async findAll(filters?: MissionFilterDto): Promise<MissionEntity[]> {
-  //   const query = this.missionRepository.createQueryBuilder('mission')
-  //     .leftJoinAndSelect('mission.skills', 'skills')
-  //     .leftJoinAndSelect('mission.applications', 'applications');
-
-  //   if (filters) {
-  //     if (filters.status) {
-  //       query.andWhere('mission.status = :status', { status: filters.status });
-  //     }
-
-  //     if (filters.skills?.length) {
-  //       query.andWhere('skills.name IN (:...skills)', { skills: filters.skills });
-  //     }
-
-  //     if (filters.minRate) {
-  //       query.andWhere('mission.dailyRateMin >= :minRate', { minRate: filters.minRate });
-  //     }
-
-  //     if (filters.maxRate) {
-  //       query.andWhere('mission.dailyRateMax <= :maxRate', { maxRate: filters.maxRate });
-  //     }
-
-  //     if (filters.location) {
-  //       query.andWhere('mission.location = :location', { location: filters.location });
-  //     }
-  //   }
-
-  //   query.orderBy('mission.createdAt', 'DESC');
-
-  //   return query.getMany();
-  // }
-
   // Maintenir la méthode existante
   async findAll(): Promise<IMission[]>;
   async findAll(filters: MissionFilterDto): Promise<IMission[]>;

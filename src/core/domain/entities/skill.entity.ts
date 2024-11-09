@@ -7,9 +7,10 @@ import {
   } from 'typeorm';
   import { FreelanceEntity } from './freelance.entity';
   import { MissionEntity } from './mission.entity';
+import { ISkill } from '../interfaces/skill.interface';
   
   @Entity('skill')
-  export class SkillEntity {
+  export class SkillEntity implements ISkill {
     @PrimaryGeneratedColumn('uuid')
     id: string;
   
