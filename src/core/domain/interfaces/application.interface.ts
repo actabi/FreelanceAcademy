@@ -11,8 +11,8 @@ export enum ApplicationStatus {
 
 export interface IApplication {
   id: string;
-  mission: IMission;
-  freelance: IFreelance;
+  mission?: IMission;
+  freelance?: IFreelance;
   status: ApplicationStatus;
   message?: string;
   expectedDailyRate?: number;
