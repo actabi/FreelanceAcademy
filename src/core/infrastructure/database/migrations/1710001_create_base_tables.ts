@@ -6,6 +6,33 @@ export class CreateBaseTables1710001 implements MigrationInterface {
     name = 'CreateBaseTables1710001';
 
     public async up(queryRunner: QueryRunner): Promise<void> {
+        // Créer d'abord les types enum
+        await queryRunner.query(`
+            CREATE TYPE "public"."mission_status_enum" AS ENUM (
+            'DRAFT', 
+            'PUBLISHED', 
+            'IN_PROGRESS', 
+            'COMPLETED', 
+            'CANCELLED'
+            );
+        `);
+
+        await queryRunner.query(`
+            CREATE TYPE "public"."mission_location_enum" AS ENUM (
+            'REMOTE',
+            'ON_SITE',
+            'HYBRID'
+            );
+        `);
+
+        await queryRunner.query(`
+            CREATE TYPE "public"."mission_priority_enum" AS ENUM (
+            'LOW',
+            'MEDIUM',
+            'HIGH',
+            'URGENT'
+            );
+        `);
         // Table FREELANCE
         await queryRunner.createTable(new Table({
             name: "freelance",
@@ -320,5 +347,10 @@ export class CreateBaseTables1710001 implements MigrationInterface {
         await queryRunner.dropTable("skill");
         await queryRunner.dropTable("mission");
         await queryRunner.dropTable("freelance");
+
+        // Supprression les types enum
+        await queryRunner.query(`DROP TYPE "public"."mission_priority_enum"`);
+        await queryRunner.query(`DROP TYPE "public"."mission_location_enum"`);
+        await queryRunner.query(`DROP TYPE "public"."mission_status_enum"`);
     }
 }

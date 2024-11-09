@@ -25,24 +25,26 @@ export class MissionEntity {
   description: string;
 
   @Column({
-      type: 'enum',
-      enum: MissionStatus,
-      default: MissionStatus.DRAFT
-  })
-  status: MissionStatus;
+    type: 'enum',
+    enum: MissionStatus,
+    enumName: 'mission_status_enum', // Ajoutez ceci
+    default: MissionStatus.DRAFT
+})
 
-  @Column({
-      type: 'enum',
-      enum: MissionLocation
-  })
-  location: MissionLocation;
+@Column({
+    type: 'enum',
+    enum: MissionLocation,
+    enumName: 'mission_location_enum' // Ajoutez ceci
+})
+location: MissionLocation;
 
-  @Column({
-      type: 'enum',
-      enum: MissionPriority,
-      nullable: true
-  })
-  priority?: MissionPriority;
+@Column({
+    type: 'enum',
+    enum: MissionPriority,
+    enumName: 'mission_priority_enum', // Ajoutez ceci
+    nullable: true
+})
+priority?: MissionPriority;
 
   @Column({
       type: 'enum',
