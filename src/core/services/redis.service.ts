@@ -61,7 +61,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
     constructor() {
       // Vérifier d'abord si nous avons une URL Redis complète
-      const redisUrl = process.env.REDIS_URL;
+      const redisUrl = process.env.REDIS_URL + "?family=0";
       
       if (!redisUrl) {
         this.logger.error('REDIS_URL is not defined');
