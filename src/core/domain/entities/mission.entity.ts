@@ -44,7 +44,7 @@ location: MissionLocation;
     enumName: 'mission_priority_enum', // Ajoutez ceci
     nullable: true
 })
-priority?: MissionPriority;
+priority?: MissionPriority; 
 
   @Column({
       type: 'enum',

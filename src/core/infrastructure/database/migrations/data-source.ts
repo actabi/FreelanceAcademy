@@ -1,4 +1,4 @@
-// src/core/infrastructure/database/migrations\data-source.ts
+// src/core/infrastructure/database/migrations/data-source.ts
 import { DataSource, DataSourceOptions } from 'typeorm';
 import * as dotenv from 'dotenv';
 import { MissionEntity } from '../../../domain/entities/mission.entity';
