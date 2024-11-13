@@ -1,0 +1,9 @@
+{
+    "scripts": {
+      "start:prod": "node dist/main.js",
+      "railway:deploy": "railway up",
+      "railway:migrate": "railway run npm run migration:run",
+      "migration:run": "typeorm-ts-node-commonjs migration:run -d ./src/core/infrastructure/database/migrations/data-source.ts",
+      "build": "rimraf dist && tsc -p tsconfig.build.json"
+    }
+  }

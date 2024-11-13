@@ -23,28 +23,9 @@ import { HealthController } from './api/controllers/health.controller';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      ignoreEnvFile: false,
-      cache: true,
-      load: [
-        () => ({
-          discord: {
-            token: process.env.DISCORD_TOKEN,
-            clientId: process.env.DISCORD_CLIENT_ID,
-            channelId: process.env.DISCORD_CHANNEL_ID,
-            guildId: process.env.DISCORD_GUILD_ID,
-            enable: process.env.ENABLE_DISCORD !== 'false',
-          },
-          database: {
-            url: process.env.DATABASE_URL,
-          },
-          redis: {
-            url: process.env.REDIS_URL,
-          },
-        }),
-      ],
+      ignoreEnvFile: true,
     }),
     RedisModule,
-    BotModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
