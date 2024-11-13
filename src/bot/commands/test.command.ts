@@ -10,9 +10,13 @@ export class TestCommand {
     description: 'Répond avec pong ! Vérifie si le bot fonctionne.'
   })
   async execute(interaction: CommandInteraction) {
+    try {
     await interaction.reply({ 
       content: 'Pong ! 🏓\nLe bot est opérationnel !',
       ephemeral: true 
     });
+} catch (error) {  
+    console.error('Erreur dans la commande ping:', error);
   }
+}
 }

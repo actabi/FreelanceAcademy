@@ -19,6 +19,8 @@ import { NotificationModule } from './core/notification/notification.module';
 import { RedisModule } from './core/redis/redis.module';
 import { HealthController } from './api/controllers/health.controller';
 import { AuthController } from './api/controllers/auth.controller';
+import { TestCommand } from './bot/commands/test.command';
+import { CommandService } from './bot/commands/command.service';
 
 @Module({
   imports: [
@@ -75,6 +77,8 @@ import { AuthController } from './api/controllers/auth.controller';
       provide: 'IDiscordService',
       useClass: DiscordClient,
     },
+    TestCommand,
+    CommandService,
     MissionService,
     FreelanceService,
     MatchingService,
