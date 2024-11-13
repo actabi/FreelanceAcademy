@@ -4,7 +4,6 @@
         "migration:generate": "npm run typeorm migration:generate src/core/infrastructure/database/migrations/CreateBaseTables",
         "migration:run": "typeorm-ts-node-commonjs migration:run -d ./src/core/infrastructure/database/migrations/data-source.ts",
         "migration:revert": "npm run typeorm migration:revert",
-        "build": "rimraf dist && npx tsc",
         "start": "node dist/main.js",
         "start:dev": "nest start --watch",
         "start:debug": "nest start --debug --watch",
@@ -27,7 +26,10 @@
         "railway:connect:postgres": "railway connect postgresql",
         "railway:connect:redis": "railway connect redis",
         "build:railway": "railway run npm run build",
-        "start:railway": "railway run npm run start:prod"
+        "start:railway": "railway run npm run start:prod",
+        "start:prod": "node dist/main.js",
+        "build": "rimraf dist && tsc -p tsconfig.build.json"
+  
     },
     "dependencies": {
         "@nestjs/common": "^10.4.6",
