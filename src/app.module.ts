@@ -23,7 +23,11 @@ import { HealthController } from './api/controllers/health.controller';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      ignoreEnvFile: true,
+      ignoreEnvFile: process.env.NODE_ENV === 'production',
+      load: [() => ({
+        isDevelopment: process.env.NODE_ENV === 'development',
+        isProduction: process.env.NODE_ENV === 'production',
+      })],
     }),
     RedisModule,
     TypeOrmModule.forRootAsync({
@@ -32,15 +36,22 @@ import { HealthController } from './api/controllers/health.controller';
         type: 'postgres',
         url: process.env.DATABASE_URL + "?family=0",
         entities: [MissionEntity],
-        synchronize: process.env.NODE_ENV === 'development',
-        ssl: {
+        // Synchronize uniquement en développement
+        synchronize: configService.get('isDevelopment'),
+        ssl: process.env.NODE_ENV === 'production' ? {
           rejectUnauthorized: false,
-        },
+        } : false,
         retryAttempts: 5,
         retryDelay: 3000,
         keepConnectionAlive: true,
         autoLoadEntities: true,
-        logging: process.env.NODE_ENV === 'development',
+        // Logging uniquement en développement
+        logging: configService.get('isDevelopment'),
+        // Options de développement
+        ...(configService.get('isDevelopment') && {
+          maxQueryExecutionTime: 1000, // Log les requêtes lentes
+          debug: true, // Active le mode debug
+        }),
       }),
       inject: [ConfigService],
     }),
