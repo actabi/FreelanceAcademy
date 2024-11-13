@@ -18,6 +18,7 @@ import { BotModule } from './bot/bot.module';
 import { NotificationModule } from './core/notification/notification.module';
 import { RedisModule } from './core/redis/redis.module';
 import { HealthController } from './api/controllers/health.controller';
+import { AuthController } from './api/controllers/auth.controller';
 
 @Module({
   imports: [
@@ -65,7 +66,10 @@ import { HealthController } from './api/controllers/health.controller';
     NotificationModule,
     BotModule,
   ],
-  controllers: [HealthController],
+  controllers: [
+    HealthController,
+    AuthController
+  ],
   providers: [
     {
       provide: 'IDiscordService',
