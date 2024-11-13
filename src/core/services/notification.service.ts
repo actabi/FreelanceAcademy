@@ -1,15 +1,15 @@
 // src/core/services/notification.service.ts
-
 import { Injectable, Logger } from '@nestjs/common';
 import { DiscordClient } from '../../bot/discord.client';
 import { CacheService } from './cache.service';
-import { IMission } from '../domain/interfaces/mission.interfaces';
+import { IMission } from '../domain/interfaces/mission.interface';
 import { MissionFormatter } from '../../bot/interactions/mission.formatter';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
+  
   constructor(
     private readonly discordClient: DiscordClient,
     private readonly cacheService: CacheService,
@@ -18,14 +18,12 @@ export class NotificationService {
 
   async notifyNewMission(mission: IMission): Promise<void> {
     try {
-      // Vérifier la config au début
       const channelId = this.configService.get<string>('DISCORD_CHANNEL_ID');
       if (!channelId) {
         throw new Error('DISCORD_CHANNEL_ID not configured');
       }
 
       const messageId = await this.discordClient.publishMission(mission);
-      
       if (messageId) {
         const updatedMission = {
           ...mission,
@@ -35,10 +33,10 @@ export class NotificationService {
         await this.cacheService.setMission(updatedMission);
         await this.notifyMatchingFreelances(updatedMission);
       }
-    } catch (error: unknown) {
+    } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      this.logger.error(`Failed to publish mission ${mission.id} to Discord: ${errorMessage}`);
-      throw new Error(`Failed to publish mission ${mission.id} to Discord: ${errorMessage}`);
+      this.logger.error(`Failed to publish mission ${mission.id}: ${errorMessage}`);
+      throw new Error(`Failed to publish mission ${mission.id}: ${errorMessage}`);
     }
   }
 
@@ -48,38 +46,29 @@ export class NotificationService {
     }
 
     try {
-      // Récupérer le channel ID depuis la configuration
       const channelId = this.configService.get<string>('DISCORD_CHANNEL_ID');
-      
       if (!channelId) {
         throw new Error('DISCORD_CHANNEL_ID not configured');
       }
 
-      // Récupérer le channel depuis le client Discord
-      const channel = await this.discordClient.getClient().channels.fetch(channelId);
-
-      if (!channel || !channel.isTextBased()) {
+      const channel = await this.discordClient.getChannel(channelId);
+      if (!channel) {
         throw new Error('Invalid Discord channel or channel type');
       }
 
-      // Récupérer le message existant
       const message = await channel.messages.fetch(mission.discordMessageId);
       if (!message) {
         throw new Error('Discord message not found');
       }
 
-      // Créer le nouvel embed avec les informations mises à jour
       const updatedEmbed = MissionFormatter.formatForDiscord(mission);
-
-      // Mettre à jour le message
       await message.edit({ embeds: [updatedEmbed] });
-
-      // Mettre à jour le cache
       await this.cacheService.setMission(mission);
-    } catch (error: unknown) {
+
+    } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      this.logger.error(`Failed to update mission ${mission.id} in Discord: ${errorMessage}`);
-      throw new Error(`Failed to update mission ${mission.id} in Discord: ${errorMessage}`);
+      this.logger.error(`Failed to update mission ${mission.id}: ${errorMessage}`);
+      throw new Error(`Failed to update mission ${mission.id}: ${errorMessage}`);
     }
   }
 
@@ -90,25 +79,24 @@ export class NotificationService {
       for (const freelance of matchingFreelances) {
         await this.sendFreelanceNotification(freelance, mission);
       }
-    } catch (error: unknown) {
+    } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       this.logger.error(`Error notifying matching freelances: ${errorMessage}`);
     }
   }
 
   private async findMatchingFreelances(mission: IMission): Promise<any[]> {
+    // Implémentation du matching à faire
     return [];
   }
 
   private async sendFreelanceNotification(freelance: any, mission: IMission): Promise<void> {
     try {
       if (freelance.discordId) {
-        await this.discordClient.sendDirectMessage(
-          freelance.discordId,
-          this.formatNotificationMessage(mission)
-        );
+        const message = this.formatNotificationMessage(mission);
+        await this.discordClient.sendDirectMessage(freelance.discordId, message);
       }
-    } catch (error: unknown) {
+    } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       this.logger.error(`Error sending notification to freelance ${freelance.id}: ${errorMessage}`);
     }

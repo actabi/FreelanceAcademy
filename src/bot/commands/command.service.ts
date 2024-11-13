@@ -18,7 +18,7 @@ export class CommandService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    if (process.env.ENABLE_DISCORD === 'false') {
+    if (this.configService.get('ENABLE_DISCORD') === 'false') {
       this.logger.warn('Discord integration is disabled');
       return;
     }
@@ -27,6 +27,13 @@ export class CommandService implements OnModuleInit {
       await this.registerCommands();
     } catch (error) {
       this.logger.error(`Failed to register Discord commands: ${(error as Error).message}`);
+      // Log plus détaillé pour le débogage
+      this.logger.debug('Configuration actuelle:', {
+        token: this.configService.get('DISCORD_TOKEN') ? 'Défini' : 'Non défini',
+        clientId: this.configService.get('DISCORD_CLIENT_ID') ? 'Défini' : 'Non défini',
+        guildId: this.configService.get('DISCORD_GUILD_ID') ? 'Défini' : 'Non défini'
+      });
+      
       if (process.env.FAIL_ON_DISCORD_ERROR === 'true') {
         throw error;
       }
@@ -34,12 +41,24 @@ export class CommandService implements OnModuleInit {
   }
 
   private async registerCommands() {
-    const token = this.configService.get<string>('discord.token');
-    const clientId = this.configService.get<string>('discord.clientId');
-    const guildId = this.configService.get<string>('discord.guildId');
+    const token = this.configService.get<string>('DISCORD_TOKEN');
+    const clientId = this.configService.get<string>('DISCORD_CLIENT_ID');
+    const guildId = this.configService.get<string>('DISCORD_GUILD_ID');
+
+    // Log des valeurs pour le débogage
+    this.logger.debug('Configuration Discord:', {
+      hasToken: !!token,
+      hasClientId: !!clientId,
+      hasGuildId: !!guildId
+    });
 
     if (!token || !clientId) {
-      throw new Error('Discord configuration is missing - token or clientId not defined');
+      const missing = [];
+      if (!token) missing.push('DISCORD_TOKEN');
+      if (!clientId) missing.push('DISCORD_CLIENT_ID');
+      
+      this.logger.error(`Missing Discord configuration: ${missing.join(', ')}`);
+      throw new Error(`Discord configuration is missing: ${missing.join(', ')}`);
     }
 
     const commands = this.discoveryService
@@ -56,16 +75,16 @@ export class CommandService implements OnModuleInit {
     const rest = new REST({ version: '10' }).setToken(token);
 
     try {
-      // Si nous avons un GUILD_ID, enregistrer les commandes au niveau du serveur
       if (guildId) {
+        // Commandes de serveur (pour le développement)
         this.logger.log(`Registering commands for guild ${guildId}...`);
         await rest.put(
           Routes.applicationGuildCommands(clientId, guildId),
           { body: commands }
         );
-        this.logger.log(`Successfully registered ${commands.length} commands for guild ${guildId}`);
+        this.logger.log(`Successfully registered ${commands.length} guild commands`);
       } else {
-        // Sinon, enregistrer les commandes globalement
+        // Commandes globales
         this.logger.log('Registering global commands...');
         await rest.put(
           Routes.applicationCommands(clientId),
@@ -75,7 +94,7 @@ export class CommandService implements OnModuleInit {
         this.logger.warn('Note: Global commands can take up to 1 hour to propagate');
       }
 
-      // Log les commandes enregistrées pour le débogage
+      // Log les commandes enregistrées
       this.logger.debug('Registered commands:', commands.map(cmd => cmd.name));
     } catch (error) {
       if (error instanceof Error) {

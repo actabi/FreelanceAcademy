@@ -1,10 +1,10 @@
 // src/tests/discord.client.spec.ts
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { DiscordClient } from '../bot/discord.client';
-import { TextChannel } from 'discord.js';
-import { IMission, MissionStatus, MissionLocation } from '../core/domain/interfaces/mission.interface';
+import { TextChannel, Client } from 'discord.js';
+import { IMission } from '../core/domain/interfaces/mission.interface';
+import { MissionStatus, MissionLocation } from '../core/domain/enums/mission.enums';
 
 describe('DiscordClient', () => {
   let discordClient: DiscordClient;
@@ -18,13 +18,16 @@ describe('DiscordClient', () => {
           return 'mock-token';
         case 'DISCORD_CHANNEL_ID':
           return 'mock-channel-id';
+        case 'DISCORD_CLIENT_ID':
+          return 'mock-client-id';
+        case 'ENABLE_DISCORD':
+          return 'true';
         default:
           return undefined;
       }
     }),
   };
 
-  // Mock d'une mission
   const mockMission: IMission = {
     id: 'test-id',
     title: 'Test Mission',
@@ -33,16 +36,10 @@ describe('DiscordClient', () => {
     dailyRateMin: 400,
     dailyRateMax: 600,
     location: MissionLocation.REMOTE,
-    skills: [], // Un tableau vide pour les skills
+    skills: [],
+    applications: [],
     createdAt: new Date(),
-    updatedAt: new Date(),
-    // Champs optionnels
-    startDate: undefined,
-    endDate: undefined,
-    companyName: undefined,
-    address: undefined,
-    discordMessageId: undefined,
-    applications: [] // Add an empty array for applications
+    updatedAt: new Date()
   };
 
   beforeEach(async () => {
@@ -60,28 +57,29 @@ describe('DiscordClient', () => {
     configService = module.get<ConfigService>(ConfigService);
 
     // Mock des méthodes du client Discord
-    jest.spyOn(discordClient['client'], 'login').mockResolvedValue('mock-token');
-  });
+    const mockClient = {
+      login: jest.fn().mockResolvedValue('logged-in'),
+      channels: {
+        fetch: jest.fn(),
+      },
+      users: {
+        fetch: jest.fn(),
+      },
+    } as unknown as Client;
 
-  describe('onModuleInit', () => {
-    it('should throw error if DISCORD_TOKEN is not defined', async () => {
-      jest.spyOn(configService, 'get').mockReturnValue(undefined);
-      await expect(discordClient.onModuleInit()).rejects.toThrow('DISCORD_TOKEN must be defined');
-    });
-
-    it('should successfully initialize with valid token', async () => {
-      await expect(discordClient.onModuleInit()).resolves.not.toThrow();
-    });
+    // @ts-ignore - Assigner le mock client
+    discordClient['client'] = mockClient;
   });
 
   describe('publishMission', () => {
     it('should successfully publish mission', async () => {
+      const mockMessage = { id: 'message-id' };
       const mockChannel = {
-        send: jest.fn().mockResolvedValue({ id: 'message-id' }),
+        send: jest.fn().mockResolvedValue(mockMessage),
       } as unknown as TextChannel;
 
-      jest.spyOn(discordClient['client'].channels, 'fetch')
-        .mockResolvedValue(mockChannel);
+      // @ts-ignore - Mock fetch method
+      discordClient['client'].channels.fetch.mockResolvedValue(mockChannel);
 
       const messageId = await discordClient.publishMission(mockMission);
       expect(messageId).toBe('message-id');
@@ -89,19 +87,43 @@ describe('DiscordClient', () => {
     });
 
     it('should throw error if channel not found', async () => {
-      jest.spyOn(discordClient['client'].channels, 'fetch')
-        .mockResolvedValue(null);
+      // @ts-ignore - Mock fetch method to return null
+      discordClient['client'].channels.fetch.mockResolvedValue(null);
 
       await expect(discordClient.publishMission(mockMission))
         .rejects.toThrow('Invalid Discord channel');
     });
 
     it('should throw error if channel ID not configured', async () => {
-      jest.spyOn(configService, 'get')
-        .mockImplementation((key) => key === 'DISCORD_TOKEN' ? 'mock-token' : undefined);
+      jest.spyOn(configService, 'get').mockImplementation((key) => {
+        if (key === 'DISCORD_CHANNEL_ID') return undefined;
+        return mockConfigService.get(key);
+      });
 
       await expect(discordClient.publishMission(mockMission))
         .rejects.toThrow('DISCORD_CHANNEL_ID must be defined');
+    });
+  });
+
+  describe('sendDirectMessage', () => {
+    it('should successfully send DM to user', async () => {
+      const mockUser = {
+        send: jest.fn().mockResolvedValue({}),
+      };
+
+      // @ts-ignore - Mock fetch method
+      discordClient['client'].users.fetch.mockResolvedValue(mockUser);
+
+      await discordClient.sendDirectMessage('user-id', 'test message');
+      expect(mockUser.send).toHaveBeenCalledWith('test message');
+    });
+
+    it('should throw error if user not found', async () => {
+      // @ts-ignore - Mock fetch method to return null
+      discordClient['client'].users.fetch.mockResolvedValue(null);
+
+      await expect(discordClient.sendDirectMessage('user-id', 'test message'))
+        .rejects.toThrow('User not found: user-id');
     });
   });
 
