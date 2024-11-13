@@ -2,7 +2,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DiscoveryModule } from '@nestjs/core';  // Ajout de l'import
+import { DiscoveryModule } from '@nestjs/core';
 import { NotificationModule } from '../core/notification/notification.module';
 import { DiscordClient } from './discord.client';
 import { MissionCommands } from './commands/mission.commands';
@@ -22,18 +22,23 @@ import { RedisService } from '../core/services/redis.service';
 @Module({
   imports: [
     ConfigModule,
-    NotificationModule,
-    DiscoveryModule,  // Ajout du module Discovery
+    DiscoveryModule,
     TypeOrmModule.forFeature([
       MissionEntity,
       FreelanceEntity,
       SkillEntity,
       AlertEntity
     ]),
+    NotificationModule
   ],
   providers: [
     DiscordClient,
     CommandService,
+    // Déclaration explicite des commandes
+    {
+      provide: 'DISCORD_COMMANDS',
+      useValue: [MissionCommands, ProfileCommand, AlertCommand]
+    },
     MissionCommands,
     ProfileCommand,
     AlertCommand,
