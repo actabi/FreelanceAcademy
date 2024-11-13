@@ -2,8 +2,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DiscoveryModule } from '@nestjs/core';  // Ajout de l'import
 import { NotificationModule } from '../core/notification/notification.module';
-import { DiscoveryModule } from '@nestjs/core';
 import { DiscordClient } from './discord.client';
 import { MissionCommands } from './commands/mission.commands';
 import { ProfileCommand } from './commands/profile.command';
@@ -23,12 +23,12 @@ import { RedisService } from '../core/services/redis.service';
   imports: [
     ConfigModule,
     NotificationModule,
-    DiscoveryModule,
+    DiscoveryModule,  // Ajout du module Discovery
     TypeOrmModule.forFeature([
       MissionEntity,
       FreelanceEntity,
       SkillEntity,
-      AlertEntity  // Ajout de l'entité Alert
+      AlertEntity
     ]),
   ],
   providers: [
@@ -39,9 +39,9 @@ import { RedisService } from '../core/services/redis.service';
     AlertCommand,
     MissionService,
     FreelanceService,
-    AlertService,   // Ajout du service Alert
+    AlertService,
     CacheService,
-    RedisService    // Nécessaire pour CacheService
+    RedisService
   ],
   exports: [DiscordClient]
 })

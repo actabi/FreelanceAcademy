@@ -3,6 +3,7 @@ import {
   Client, 
   TextChannel, 
   GatewayIntentBits,
+  Partials,
   ButtonBuilder,
   ActionRowBuilder,
   ButtonStyle,
@@ -25,11 +26,17 @@ export class DiscordClient implements OnModuleInit {
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMessageReactions,
         GatewayIntentBits.DirectMessages,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers,  // Ajout pour les commandes slash
+        GatewayIntentBits.GuildIntegrations  // Ajout pour les commandes slash
+      ],
+      partials: [
+        Partials.Channel,
+        Partials.Message,
+        Partials.Reaction
       ]
     });
 
-    // Vérifier si Discord est activé via la variable d'environnement
     this.isDiscordEnabled = process.env.ENABLE_DISCORD !== 'false';
   }
 
