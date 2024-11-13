@@ -18,6 +18,7 @@ import { SkillEntity } from '../core/domain/entities/skill.entity';
 import { AlertEntity } from '../core/domain/entities/alert.entity';
 import { CacheService } from '../core/services/cache.service';
 import { RedisService } from '../core/services/redis.service';
+import { TestCommand } from './commands/test.command';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { RedisService } from '../core/services/redis.service';
       useValue: [MissionCommands, ProfileCommand, AlertCommand]
     },
     MissionCommands,
+    TestCommand,
     ProfileCommand,
     AlertCommand,
     MissionService,
