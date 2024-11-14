@@ -3,9 +3,12 @@ import { Injectable } from '@nestjs/common';
 import { CommandInteraction, ApplicationCommandOptionType } from 'discord.js';
 import { Command } from '../decorators/command.decorator';
 import { MissionService } from '../../core/services/mission.service';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class MissionCommands {
+  private readonly logger = new Logger(MissionCommands.name);
+  
   constructor(private readonly missionService: MissionService) {}
 
   @Command({
@@ -13,6 +16,8 @@ export class MissionCommands {
     description: 'Liste des missions disponibles'
   })
   async listMissions(interaction: CommandInteraction) {
+    this.logger.debug('Executing listMissions command');
+    
     if (!interaction.isChatInputCommand()) return;
 
     try {
@@ -27,7 +32,7 @@ export class MissionCommands {
       }
 
       const missionsList = missions
-        .slice(0, 10) // Limiter à 10 missions pour éviter les messages trop longs
+        .slice(0, 10)
         .map(mission => `- ${mission.title} (${mission.dailyRateMin}€ - ${mission.dailyRateMax}€/jour)`)
         .join('\n');
 
@@ -36,7 +41,7 @@ export class MissionCommands {
         ephemeral: true
       });
     } catch (error) {
-      console.error('Erreur lors de la récupération des missions:', error);
+      this.logger.error('Error executing listMissions command:', error);
       await interaction.reply({
         content: 'Une erreur est survenue lors de la récupération des missions.',
         ephemeral: true
@@ -57,6 +62,8 @@ export class MissionCommands {
     ]
   })
   async getMission(interaction: CommandInteraction) {
+    this.logger.debug('Executing getMission command');
+    
     if (!interaction.isChatInputCommand()) return;
 
     const id = interaction.options.getString('id', true);
@@ -87,7 +94,7 @@ export class MissionCommands {
         ephemeral: true
       });
     } catch (error) {
-      console.error('Erreur lors de la récupération de la mission:', error);
+      this.logger.error('Error executing getMission command:', error);
       await interaction.reply({
         content: 'Une erreur est survenue lors de la récupération de la mission.',
         ephemeral: true
