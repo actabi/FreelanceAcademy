@@ -27,34 +27,33 @@ export class CommandService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    const isDiscordEnabled = this.configService.get('ENABLE_DISCORD') !== 'false';
+    if (!isDiscordEnabled) {
+      this.logger.warn('Discord integration is disabled');
+      return;
+    }
+
     try {
-      // Vérifier d'abord si Discord est activé
-      const isDiscordEnabled = this.configService.get('ENABLE_DISCORD') !== 'false';
-      if (!isDiscordEnabled) {
-        this.logger.warn('Discord integration is disabled');
-        return;
-      }
-
-      // Attendre que le client Discord soit prêt
-      await this.waitForDiscordClient();
-
-      // Enregistrer les commandes
-      await this.registerCommands();
-
-      // Configurer les gestionnaires de commandes
-      await this.setupCommandHandlers();
-
-    } catch (error) {
-      this.logger.error('Failed to initialize CommandService:', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
-      });
+      this.logger.log('Waiting for Discord client to be ready...');
+      await this.discordClient.waitForReady();
       
-      // En développement, on veut voir l'erreur complète
+      this.logger.log('Discord client is ready, initializing commands...');
+      await this.registerCommands();
+      await this.setupCommandHandlers();
+      
+      this.logger.log('Command service initialization completed');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      
+      this.logger.error('Failed to initialize CommandService:', {
+        error: errorMessage,
+        stack: errorStack
+      });
+
       if (process.env.NODE_ENV === 'development') {
         throw error;
       } else {
-        // En production, on veut continuer même si les commandes ne sont pas chargées
         this.logger.warn('Continuing without Discord commands...');
       }
     }

@@ -19,6 +19,8 @@ import { FreelanceEntity } from '../core/domain/entities/freelance.entity';
 import { SkillEntity } from '../core/domain/entities/skill.entity';
 import { AlertEntity } from '../core/domain/entities/alert.entity';
 import { ApplicationEntity } from '../core/domain/entities/application.entity';
+import { NotificationModule } from '../core/notification/notification.module';
+import { RedisModule } from '../core/redis/redis.module';
 
 @Module({
   imports: [
@@ -31,26 +33,28 @@ import { ApplicationEntity } from '../core/domain/entities/application.entity';
       AlertEntity,
       ApplicationEntity
     ]),
+    NotificationModule,
+    RedisModule
   ],
   providers: [
-    // Services Discord
+    // Base Services
     DiscordClient,
-    CommandService,
     
-    // Commandes
+    // Core Services
+    MissionService,
+    FreelanceService,
+    AlertService,
+    CacheService,
+    
+    // Commands (must be after services)
     TestCommand,
     MissionCommands,
     ProfileCommand,
     AlertCommand,
     
-    // Services Core
-    MissionService,
-    FreelanceService,
-    AlertService,
-    NotificationService,
-    CacheService,
+    // Command Service (must be last)
+    CommandService,
     
-    // Provider pour les commandes
     {
       provide: 'DISCORD_COMMANDS',
       useValue: [TestCommand, MissionCommands, ProfileCommand, AlertCommand]

@@ -18,11 +18,14 @@ import { MissionFormatter } from './interactions/mission.formatter';
 export class DiscordClient implements OnModuleInit {
   private readonly client: Client;
   private readonly logger = new Logger(DiscordClient.name);
-  private ready = false;
-  private readonly isDiscordEnabled: boolean;
+  private clientReady = false;
+  private readyPromise: Promise<void>;
+  private resolveReady!: () => void;
 
   constructor(private readonly configService: ConfigService) {
-    this.isDiscordEnabled = this.configService.get('ENABLE_DISCORD') !== 'false';
+    this.readyPromise = new Promise((resolve) => {
+      this.resolveReady = resolve;
+    });
 
     this.client = new Client({
       intents: [
@@ -41,10 +44,14 @@ export class DiscordClient implements OnModuleInit {
       ]
     });
 
-    // Setup listeners
+    this.setupEventHandlers();
+  }
+
+  private setupEventHandlers() {
     this.client.on('ready', () => {
-      this.ready = true;
       this.logger.log(`Logged in as ${this.client.user?.tag}`);
+      this.clientReady = true;
+      this.resolveReady();
     });
 
     this.client.on('error', (error) => {
@@ -53,27 +60,60 @@ export class DiscordClient implements OnModuleInit {
   }
 
   async onModuleInit() {
-    if (!this.isDiscordEnabled) {
+    const isDiscordEnabled = this.configService.get('ENABLE_DISCORD') !== 'false';
+    if (!isDiscordEnabled) {
       this.logger.warn('Discord integration is disabled');
       return;
     }
 
     try {
-      await this.validateAndConnect();
+      await this.connect();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      this.logger.error(`Failed to initialize Discord client: ${errorMessage}`, {
-        error: error instanceof Error ? error.stack : undefined
-      });
-      
-      if (process.env.NODE_ENV === 'development' || process.env.FAIL_ON_DISCORD_ERROR === 'true') {
-        throw error;
-      } else {
-        this.logger.warn('Continuing without Discord functionality...');
-      }
+      this.logger.error('Failed to initialize Discord client:', error);
+      throw error;
     }
   }
 
+  async connect(): Promise<void> {
+    const token = this.configService.get<string>('DISCORD_TOKEN');
+    if (!token) {
+      throw new Error('DISCORD_TOKEN must be defined');
+    }
+
+    this.logger.log('Connecting to Discord...');
+    
+    try {
+      await this.client.login(token);
+      await this.waitForReady();
+      this.logger.log('Discord client is fully initialized and ready');
+    } catch (error) {
+      this.logger.error('Failed to connect to Discord:', error);
+      throw error;
+    }
+  }
+
+  async waitForReady(timeout = 30000): Promise<void> {
+    if (this.clientReady) return;
+
+    try {
+      await Promise.race([
+        this.readyPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Discord client initialization timeout')), timeout)
+        )
+      ]);
+    } catch (error) {
+      this.logger.error('Failed waiting for Discord client to be ready:', error);
+      throw error;
+    }
+  }
+
+  getClient(): Client {
+    if (!this.clientReady) {
+      throw new Error('Discord client is not ready. Call waitForReady() first');
+    }
+    return this.client;
+  }
   private async validateAndConnect(): Promise<void> {
     const token = this.configService.get<string>('DISCORD_TOKEN');
     if (!token) {
@@ -84,8 +124,8 @@ export class DiscordClient implements OnModuleInit {
       this.logger.log('Connecting to Discord...');
       await this.client.login(token);
       
-      // Attendre que le client soit prêt
-      if (!this.ready) {
+      // Wait for client to be ready
+      if (!this.clientReady) {
         await new Promise<void>((resolve, reject) => {
           const timeout = setTimeout(() => {
             reject(new Error('Timeout waiting for Discord client to be ready'));
@@ -93,33 +133,16 @@ export class DiscordClient implements OnModuleInit {
 
           this.client.once('ready', () => {
             clearTimeout(timeout);
+            this.clientReady = true; // Set the ready flag
             resolve();
           });
         });
       }
-
-      this.logger.log('Successfully connected to Discord');
-    } catch (error) {
-      this.logger.error('Failed to connect to Discord:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to connect to Discord: ${errorMessage}`);
       throw error;
     }
-  }
-
-  getClient(): Client {
-    if (!this.client?.isReady()) {
-      throw new Error('Discord client is not ready');
-    }
-    return this.client;
-  }
-
-  private setupEventHandlers() {
-    this.client.on('ready', () => {
-      this.logger.log(`Logged in as ${this.client.user?.tag}`);
-    });
-
-    this.client.on('error', (error) => {
-      this.logger.error('Discord client error:', error);
-    });
   }
 
   async publishMission(mission: IMission): Promise<string> {
