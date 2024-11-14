@@ -3,6 +3,7 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { Logger } from "@nestjs/common";
 import { checkRequiredEnvVars } from "./startup.check";
+import 'reflect-metadata';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');

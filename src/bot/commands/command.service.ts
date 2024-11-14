@@ -1,4 +1,3 @@
-// src/bot/commands/command.service.ts
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { DiscoveryService } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
@@ -34,122 +33,82 @@ export class CommandService implements OnModuleInit {
     }
 
     try {
-      this.logger.log('Waiting for Discord client to be ready...');
-      await this.discordClient.waitForReady();
-      
-      this.logger.log('Discord client is ready, initializing commands...');
+      this.logger.log('Initializing commands...');
       await this.registerCommands();
       await this.setupCommandHandlers();
-      
-      this.logger.log('Command service initialization completed');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const errorStack = error instanceof Error ? error.stack : undefined;
-      
-      this.logger.error('Failed to initialize CommandService:', {
-        error: errorMessage,
-        stack: errorStack
-      });
-
+      this.logger.error('Failed to initialize commands:', errorMessage);
       if (process.env.NODE_ENV === 'development') {
         throw error;
-      } else {
-        this.logger.warn('Continuing without Discord commands...');
       }
     }
-  }
-
-  private async waitForDiscordClient(timeout = 30000): Promise<void> {
-    const startTime = Date.now();
-    
-    while (!this.discordClient.getClient()?.isReady()) {
-      if (Date.now() - startTime > timeout) {
-        throw new Error('Timeout waiting for Discord client to be ready');
-      }
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    this.logger.log('Discord client is ready');
   }
 
   private async registerCommands() {
-    // Vérifier les variables d'environnement requises
     const token = this.configService.get<string>('DISCORD_TOKEN');
     const clientId = this.configService.get<string>('DISCORD_CLIENT_ID');
     const guildId = this.configService.get<string>('DISCORD_GUILD_ID');
-
-    this.logger.debug('Configuration check:', {
-      hasToken: !!token,
-      hasClientId: !!clientId,
-      hasGuildId: !!guildId,
-      env: process.env.NODE_ENV
-    });
 
     if (!token || !clientId) {
       throw new Error('Missing required Discord configuration (token or clientId)');
     }
 
-    // Découverte des commandes
-    const providers = this.discoveryService.getProviders();
-    
-    this.logger.debug(`Found ${providers.length} providers`);
-    
-    const commandProviders = providers.filter(wrapper => {
-      const hasMetadata = !!Reflect.getMetadata(COMMAND_KEY, wrapper.metatype);
-      const hasInstance = !!wrapper.instance;
-      
-      this.logger.debug(`Provider check: ${wrapper.metatype?.name}`, {
-        hasMetadata,
-        hasInstance
+    // Enregistrement des commandes injectées
+    if (this.injectedCommands && this.injectedCommands.length > 0) {
+      this.injectedCommands.forEach(CommandClass => {
+        const instance = new CommandClass();
+        const metadata = Reflect.getMetadata(COMMAND_KEY, CommandClass);
+        if (metadata) {
+          this.commands.set(metadata.name, { metadata, instance });
+        }
       });
-      
-      return hasMetadata && hasInstance;
+    }
+
+    // Découverte des commandes via le DiscoveryService
+    const providers = this.discoveryService.getProviders();
+    const commandProviders = providers.filter(wrapper => {
+      return wrapper.instance && 
+             wrapper.metatype &&
+             Reflect.hasMetadata(COMMAND_KEY, wrapper.metatype);
     });
 
-    // Création de la collection des commandes
     commandProviders.forEach(wrapper => {
       const metadata = Reflect.getMetadata(COMMAND_KEY, wrapper.metatype);
-      this.commands.set(metadata.name, {
-        metadata,
-        instance: wrapper.instance
-      });
+      if (metadata) {
+        this.commands.set(metadata.name, {
+          metadata,
+          instance: wrapper.instance
+        });
+      }
     });
 
-    const commandsData = Array.from(this.commands.values()).map(cmd => cmd.metadata);
-
-    if (!commandsData.length) {
-      this.logger.warn('No commands found to register');
+    if (this.commands.size === 0) {
+      this.logger.warn('No commands registered');
       return;
     }
 
-    this.logger.log(`Found ${commandsData.length} commands to register`);
-
     const rest = new REST({ version: '10' }).setToken(token);
+    const commandsData = Array.from(this.commands.values()).map(cmd => cmd.metadata);
 
     try {
-      this.logger.log('Started refreshing application (/) commands.');
-
+      this.logger.log(`Registering ${commandsData.length} commands...`);
+      
       if (guildId) {
-        const result = await rest.put(
+        await rest.put(
           Routes.applicationGuildCommands(clientId, guildId),
           { body: commandsData }
         );
-        this.logger.log(`Successfully registered ${commandsData.length} guild commands`);
-        this.logger.debug('Registration result:', result);
+        this.logger.log('Successfully registered guild commands');
       } else {
-        const result = await rest.put(
+        await rest.put(
           Routes.applicationCommands(clientId),
           { body: commandsData }
         );
-        this.logger.log(`Successfully registered ${commandsData.length} global commands`);
-        this.logger.debug('Registration result:', result);
+        this.logger.log('Successfully registered global commands');
       }
-
     } catch (error) {
-      this.logger.error('Failed to register commands:', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
-      });
+      this.logger.error('Failed to register commands:', error);
       throw error;
     }
   }
@@ -167,27 +126,17 @@ export class CommandService implements OnModuleInit {
       }
 
       try {
-        this.logger.debug(`Executing command: ${interaction.commandName}`);
         await command.instance.execute(interaction);
       } catch (error) {
-        this.logger.error(`Error executing command ${interaction.commandName}:`, {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined
-        });
+        this.logger.error(`Error executing command ${interaction.commandName}:`, error);
         
-        try {
-          if (!interaction.replied && !interaction.deferred) {
-            await interaction.reply({ 
-              content: 'Une erreur est survenue lors de l\'exécution de la commande.',
-              ephemeral: true 
-            });
-          }
-        } catch (replyError) {
-          this.logger.error('Failed to send error message to user:', replyError);
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({ 
+            content: 'Une erreur est survenue lors de l\'exécution de la commande.',
+            ephemeral: true 
+          });
         }
       }
     });
-
-    this.logger.log('Command handlers setup completed');
   }
 }
