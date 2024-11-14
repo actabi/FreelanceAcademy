@@ -1,6 +1,6 @@
 {
     "scripts": {
-"typeorm": "typeorm-ts-node-commonjs",
+        "typeorm": "typeorm-ts-node-commonjs",
         "migration:generate": "npm run typeorm migration:generate src/core/infrastructure/database/migrations/CreateBaseTables",
         "migration:run": "typeorm-ts-node-commonjs migration:run -d ./src/core/infrastructure/database/migrations/data-source.ts",
         "migration:revert": "npm run typeorm migration:revert",
@@ -45,10 +45,12 @@
         "class-transformer": "^0.5.1",
         "class-validator": "^0.14.0",
         "discord.js": "^14.16.3",
+        "get-intrinsic": "^1.2.4",
         "ioredis": "^5.4.1",
         "pg": "^8.13.1",
         "reflect-metadata": "^0.2.2",
-        "typeorm": "^0.3.20"
+        "typeorm": "^0.3.20",
+        "uuid": "^11.0.3"
     },
     "devDependencies": {
         "@types/ioredis": "^4.28.10",

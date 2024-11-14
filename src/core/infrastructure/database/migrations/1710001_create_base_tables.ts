@@ -6,6 +6,15 @@ export class CreateBaseTables1710001 implements MigrationInterface {
     name = 'CreateBaseTables1710001';
 
     public async up(queryRunner: QueryRunner): Promise<void> {
+
+        await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
+
+        await queryRunner.query(`
+            CREATE TABLE "freelance" (
+                "id" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+                -- reste des colonnes
+            )
+        `);
         // Créer d'abord les types enum
         await queryRunner.query(`
             CREATE TYPE "public"."mission_status_enum" AS ENUM (
@@ -352,5 +361,7 @@ export class CreateBaseTables1710001 implements MigrationInterface {
         await queryRunner.query(`DROP TYPE "public"."mission_priority_enum"`);
         await queryRunner.query(`DROP TYPE "public"."mission_location_enum"`);
         await queryRunner.query(`DROP TYPE "public"."mission_status_enum"`);
+
+        await queryRunner.query(`DROP EXTENSION IF EXISTS "uuid-ossp"`);
     }
 }
