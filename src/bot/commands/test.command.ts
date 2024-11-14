@@ -11,6 +11,7 @@ export class TestCommand {
     name: 'ping',
     description: 'Répond avec pong ! Vérifie si le bot fonctionne.'
   })
+  
   async execute(interaction: CommandInteraction) {
     try {
       await interaction.reply({ 
