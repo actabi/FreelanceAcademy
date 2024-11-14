@@ -7,16 +7,23 @@ import { COMMAND_KEY } from '../decorators/command.decorator';
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v10';
 import { Inject, Optional } from '@nestjs/common';
+import { Collection } from 'discord.js';
+
+interface CommandInstance {
+  metadata: any;
+  instance: any;
+}
 
 @Injectable()
 export class CommandService implements OnModuleInit {
   private readonly logger = new Logger(CommandService.name);
+  private commands = new Collection<string, CommandInstance>();
 
   constructor(
     private readonly discoveryService: DiscoveryService,
     private readonly discordClient: DiscordClient,
     private readonly configService: ConfigService,
-    @Optional() @Inject('DISCORD_COMMANDS') private readonly commands: any[] = []
+    @Optional() @Inject('DISCORD_COMMANDS') private readonly injectedCommands: any[] = []
   ) {}
 
   async onModuleInit() {
@@ -28,13 +35,10 @@ export class CommandService implements OnModuleInit {
 
     try {
       await this.registerCommands();
+      await this.setupCommandHandlers();
     } catch (error) {
-      this.logger.error(`Failed to register Discord commands: ${(error as Error).message}`);
-      this.logger.debug('Configuration actuelle:', {
-        token: this.configService.get('DISCORD_TOKEN') ? 'Défini' : 'Non défini',
-        clientId: this.configService.get('DISCORD_CLIENT_ID') ? 'Défini' : 'Non défini',
-        guildId: this.configService.get('DISCORD_GUILD_ID') ? 'Défini' : 'Non défini'
-      });
+      this.logger.error(`Failed to initialize commands: ${(error as Error).message}`);
+      throw error;
     }
   }
 
@@ -47,54 +51,83 @@ export class CommandService implements OnModuleInit {
       throw new Error('Token ou ClientId manquant');
     }
 
-    // Découverte des commandes via le decorator ET les commandes injectées
-    const decoratedCommands = this.discoveryService
-      .getProviders()
-      .filter(wrapper => wrapper.metatype)
-      .map(wrapper => Reflect.getMetadata(COMMAND_KEY, wrapper.metatype))
-      .filter(Boolean);
+    // Découverte des commandes via le DiscoveryService
+    const providers = this.discoveryService.getProviders();
+    const commandProviders = providers.filter(wrapper => {
+      const metadata = Reflect.getMetadata(COMMAND_KEY, wrapper.metatype);
+      return metadata && wrapper.instance;
+    });
 
-    const injectedCommands = this.commands
-      .map(cmd => Reflect.getMetadata(COMMAND_KEY, cmd))
-      .filter(Boolean);
+    // Création de la collection des commandes avec leurs instances
+    commandProviders.forEach(wrapper => {
+      const metadata = Reflect.getMetadata(COMMAND_KEY, wrapper.metatype);
+      this.commands.set(metadata.name, {
+        metadata,
+        instance: wrapper.instance
+      });
+    });
 
-    const allCommands = [...new Set([...decoratedCommands, ...injectedCommands])];
+    // Préparation des métadonnées pour l'API Discord
+    const commandsData = Array.from(this.commands.values()).map(cmd => cmd.metadata);
 
-    if (!allCommands.length) {
+    if (!commandsData.length) {
       this.logger.warn('No commands found to register');
-      this.logger.debug('Available providers:', 
-        this.discoveryService.getProviders()
-          .map(wrapper => wrapper.metatype?.name)
-          .filter(Boolean)
-      );
       return;
     }
 
-    this.logger.log(`Found ${allCommands.length} commands to register`);
+    this.logger.log(`Found ${commandsData.length} commands to register`);
 
     const rest = new REST({ version: '10' }).setToken(token);
 
     try {
+      this.logger.log('Started refreshing application (/) commands.');
+
       if (guildId) {
         await rest.put(
           Routes.applicationGuildCommands(clientId, guildId),
-          { body: allCommands }
+          { body: commandsData }
         );
-        this.logger.log(`Registered ${allCommands.length} guild commands`);
+        this.logger.log(`Successfully registered ${commandsData.length} guild commands.`);
       } else {
         await rest.put(
           Routes.applicationCommands(clientId),
-          { body: allCommands }
+          { body: commandsData }
         );
-        this.logger.log(`Registered ${allCommands.length} global commands`);
+        this.logger.log(`Successfully registered ${commandsData.length} global commands.`);
       }
 
-      allCommands.forEach(cmd => {
+      commandsData.forEach(cmd => {
         this.logger.log(`Registered command: ${cmd.name}`);
       });
     } catch (error) {
       this.logger.error('Failed to register commands:', error);
       throw error;
     }
+  }
+
+  private async setupCommandHandlers() {
+    const client = this.discordClient.getClient();
+    
+    client.on('interactionCreate', async interaction => {
+      if (!interaction.isCommand()) return;
+
+      const command = this.commands.get(interaction.commandName);
+      if (!command) {
+        this.logger.warn(`Command not found: ${interaction.commandName}`);
+        return;
+      }
+
+      try {
+        await command.instance.execute(interaction);
+      } catch (error) {
+        this.logger.error(`Error executing command ${interaction.commandName}:`, error);
+        await interaction.reply({ 
+          content: 'Une erreur est survenue lors de l\'exécution de la commande.',
+          ephemeral: true 
+        });
+      }
+    });
+
+    this.logger.log('Command handlers setup completed');
   }
 }
