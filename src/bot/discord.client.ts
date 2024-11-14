@@ -7,8 +7,7 @@ import {
   ButtonBuilder,
   ActionRowBuilder,
   ButtonStyle,
-  MessageActionRowComponentBuilder,
-  User
+  MessageActionRowComponentBuilder
 } from 'discord.js';
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -19,9 +18,12 @@ import { MissionFormatter } from './interactions/mission.formatter';
 export class DiscordClient implements OnModuleInit {
   private readonly client: Client;
   private readonly logger = new Logger(DiscordClient.name);
+  private ready = false;
   private readonly isDiscordEnabled: boolean;
 
   constructor(private readonly configService: ConfigService) {
+    this.isDiscordEnabled = this.configService.get('ENABLE_DISCORD') !== 'false';
+
     this.client = new Client({
       intents: [
         GatewayIntentBits.Guilds,
@@ -39,7 +41,15 @@ export class DiscordClient implements OnModuleInit {
       ]
     });
 
-    this.isDiscordEnabled = this.configService.get('ENABLE_DISCORD') !== 'false';
+    // Setup listeners
+    this.client.on('ready', () => {
+      this.ready = true;
+      this.logger.log(`Logged in as ${this.client.user?.tag}`);
+    });
+
+    this.client.on('error', (error) => {
+      this.logger.error('Discord client error:', error);
+    });
   }
 
   async onModuleInit() {
@@ -52,41 +62,54 @@ export class DiscordClient implements OnModuleInit {
       await this.validateAndConnect();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      this.logger.error(`Failed to initialize Discord client: ${errorMessage}`);
-      if (process.env.FAIL_ON_DISCORD_ERROR === 'true') {
+      this.logger.error(`Failed to initialize Discord client: ${errorMessage}`, {
+        error: error instanceof Error ? error.stack : undefined
+      });
+      
+      if (process.env.NODE_ENV === 'development' || process.env.FAIL_ON_DISCORD_ERROR === 'true') {
         throw error;
+      } else {
+        this.logger.warn('Continuing without Discord functionality...');
       }
     }
   }
 
   private async validateAndConnect(): Promise<void> {
     const token = this.configService.get<string>('DISCORD_TOKEN');
-    const channelId = this.configService.get<string>('DISCORD_CHANNEL_ID');
-    const clientId = this.configService.get<string>('DISCORD_CLIENT_ID');
-    const guildId = this.configService.get<string>('DISCORD_GUILD_ID');
-
-    // Valider toutes les configurations requises
-    const missingConfigs: string[] = [];
-    if (!token) missingConfigs.push('DISCORD_TOKEN');
-    if (!channelId) missingConfigs.push('DISCORD_CHANNEL_ID');
-    if (!clientId) missingConfigs.push('DISCORD_CLIENT_ID');
-
-    if (missingConfigs.length > 0) {
-      this.logger.error(`Missing required Discord configurations: ${missingConfigs.join(', ')}`);
-      throw new Error(`Missing required Discord configurations: ${missingConfigs.join(', ')}`);
+    if (!token) {
+      throw new Error('DISCORD_TOKEN must be defined');
     }
 
     try {
+      this.logger.log('Connecting to Discord...');
       await this.client.login(token);
+      
+      // Attendre que le client soit prêt
+      if (!this.ready) {
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Timeout waiting for Discord client to be ready'));
+          }, 30000);
+
+          this.client.once('ready', () => {
+            clearTimeout(timeout);
+            resolve();
+          });
+        });
+      }
+
       this.logger.log('Successfully connected to Discord');
-
-      // Configurer les gestionnaires d'événements
-      this.setupEventHandlers();
-
     } catch (error) {
       this.logger.error('Failed to connect to Discord:', error);
       throw error;
     }
+  }
+
+  getClient(): Client {
+    if (!this.client?.isReady()) {
+      throw new Error('Discord client is not ready');
+    }
+    return this.client;
   }
 
   private setupEventHandlers() {
@@ -154,13 +177,6 @@ export class DiscordClient implements OnModuleInit {
           .setLabel('Plus de détails')
           .setStyle(ButtonStyle.Secondary)
       );
-  }
-
-  getClient(): Client {
-    if (!this.client?.isReady()) {
-      throw new Error('Discord client is not ready');
-    }
-    return this.client;
   }
 
   async getChannel(channelId: string): Promise<TextChannel | null> {

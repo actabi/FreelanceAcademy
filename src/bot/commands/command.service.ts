@@ -27,38 +27,87 @@ export class CommandService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    const isDiscordEnabled = this.configService.get('ENABLE_DISCORD') !== 'false';
-    if (!isDiscordEnabled) {
-      this.logger.warn('Discord integration is disabled');
-      return;
-    }
-
     try {
+      // Vérifier d'abord si Discord est activé
+      const isDiscordEnabled = this.configService.get('ENABLE_DISCORD') !== 'false';
+      if (!isDiscordEnabled) {
+        this.logger.warn('Discord integration is disabled');
+        return;
+      }
+
+      // Attendre que le client Discord soit prêt
+      await this.waitForDiscordClient();
+
+      // Enregistrer les commandes
       await this.registerCommands();
+
+      // Configurer les gestionnaires de commandes
       await this.setupCommandHandlers();
+
     } catch (error) {
-      this.logger.error(`Failed to initialize commands: ${(error as Error).message}`);
-      throw error;
+      this.logger.error('Failed to initialize CommandService:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
+      // En développement, on veut voir l'erreur complète
+      if (process.env.NODE_ENV === 'development') {
+        throw error;
+      } else {
+        // En production, on veut continuer même si les commandes ne sont pas chargées
+        this.logger.warn('Continuing without Discord commands...');
+      }
     }
   }
 
+  private async waitForDiscordClient(timeout = 30000): Promise<void> {
+    const startTime = Date.now();
+    
+    while (!this.discordClient.getClient()?.isReady()) {
+      if (Date.now() - startTime > timeout) {
+        throw new Error('Timeout waiting for Discord client to be ready');
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    this.logger.log('Discord client is ready');
+  }
+
   private async registerCommands() {
+    // Vérifier les variables d'environnement requises
     const token = this.configService.get<string>('DISCORD_TOKEN');
     const clientId = this.configService.get<string>('DISCORD_CLIENT_ID');
     const guildId = this.configService.get<string>('DISCORD_GUILD_ID');
 
-    if (!token || !clientId) {
-      throw new Error('Token ou ClientId manquant');
-    }
-
-    // Découverte des commandes via le DiscoveryService
-    const providers = this.discoveryService.getProviders();
-    const commandProviders = providers.filter(wrapper => {
-      const metadata = Reflect.getMetadata(COMMAND_KEY, wrapper.metatype);
-      return metadata && wrapper.instance;
+    this.logger.debug('Configuration check:', {
+      hasToken: !!token,
+      hasClientId: !!clientId,
+      hasGuildId: !!guildId,
+      env: process.env.NODE_ENV
     });
 
-    // Création de la collection des commandes avec leurs instances
+    if (!token || !clientId) {
+      throw new Error('Missing required Discord configuration (token or clientId)');
+    }
+
+    // Découverte des commandes
+    const providers = this.discoveryService.getProviders();
+    
+    this.logger.debug(`Found ${providers.length} providers`);
+    
+    const commandProviders = providers.filter(wrapper => {
+      const hasMetadata = !!Reflect.getMetadata(COMMAND_KEY, wrapper.metatype);
+      const hasInstance = !!wrapper.instance;
+      
+      this.logger.debug(`Provider check: ${wrapper.metatype?.name}`, {
+        hasMetadata,
+        hasInstance
+      });
+      
+      return hasMetadata && hasInstance;
+    });
+
+    // Création de la collection des commandes
     commandProviders.forEach(wrapper => {
       const metadata = Reflect.getMetadata(COMMAND_KEY, wrapper.metatype);
       this.commands.set(metadata.name, {
@@ -67,7 +116,6 @@ export class CommandService implements OnModuleInit {
       });
     });
 
-    // Préparation des métadonnées pour l'API Discord
     const commandsData = Array.from(this.commands.values()).map(cmd => cmd.metadata);
 
     if (!commandsData.length) {
@@ -83,24 +131,26 @@ export class CommandService implements OnModuleInit {
       this.logger.log('Started refreshing application (/) commands.');
 
       if (guildId) {
-        await rest.put(
+        const result = await rest.put(
           Routes.applicationGuildCommands(clientId, guildId),
           { body: commandsData }
         );
-        this.logger.log(`Successfully registered ${commandsData.length} guild commands.`);
+        this.logger.log(`Successfully registered ${commandsData.length} guild commands`);
+        this.logger.debug('Registration result:', result);
       } else {
-        await rest.put(
+        const result = await rest.put(
           Routes.applicationCommands(clientId),
           { body: commandsData }
         );
-        this.logger.log(`Successfully registered ${commandsData.length} global commands.`);
+        this.logger.log(`Successfully registered ${commandsData.length} global commands`);
+        this.logger.debug('Registration result:', result);
       }
 
-      commandsData.forEach(cmd => {
-        this.logger.log(`Registered command: ${cmd.name}`);
-      });
     } catch (error) {
-      this.logger.error('Failed to register commands:', error);
+      this.logger.error('Failed to register commands:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       throw error;
     }
   }
@@ -118,13 +168,24 @@ export class CommandService implements OnModuleInit {
       }
 
       try {
+        this.logger.debug(`Executing command: ${interaction.commandName}`);
         await command.instance.execute(interaction);
       } catch (error) {
-        this.logger.error(`Error executing command ${interaction.commandName}:`, error);
-        await interaction.reply({ 
-          content: 'Une erreur est survenue lors de l\'exécution de la commande.',
-          ephemeral: true 
+        this.logger.error(`Error executing command ${interaction.commandName}:`, {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
         });
+        
+        try {
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ 
+              content: 'Une erreur est survenue lors de l\'exécution de la commande.',
+              ephemeral: true 
+            });
+          }
+        } catch (replyError) {
+          this.logger.error('Failed to send error message to user:', replyError);
+        }
       }
     });
 
