@@ -37,28 +37,26 @@ import { RedisModule } from '../core/redis/redis.module';
     RedisModule
   ],
   providers: [
-    // Base Services
+    // Services de base
     DiscordClient,
+    CommandService,
     
-    // Core Services
+    // Services métier
     MissionService,
     FreelanceService,
     AlertService,
+    NotificationService,
     CacheService,
     
-    // Commands (must be after services)
-    TestCommand,
+    // Commands
+    {
+      provide: 'DISCORD_COMMANDS',
+      useValue: [MissionCommands, ProfileCommand, AlertCommand, TestCommand]
+    },
     MissionCommands,
     ProfileCommand,
     AlertCommand,
-    
-    // Command Service (must be last)
-    CommandService,
-    
-    {
-      provide: 'DISCORD_COMMANDS',
-      useValue: [TestCommand, MissionCommands, ProfileCommand, AlertCommand]
-    }
+    TestCommand
   ],
   exports: [DiscordClient]
 })
